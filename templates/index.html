@@ -148,7 +148,11 @@
             <textarea placeholder="Source Server IP"></textarea>
             <select><option value="">Subnet Mask</option><option>255.255.255.0</option></select>
             <button class="final-execute">Search SRC IP</button>
-            <select multiple><option value="blr-vpn-fw01:0">Add Firewall</option></select>
+            <select multiple>
+            {% for fw in firewalls %}
+                <option value="{{ fw.firewall_hostname }}">{{ fw.firewall_hostname }}</option>
+            {% endfor %}
+            </select>
         </div>
 
         <div class="section-title" onclick="toggleSection(this)">Destination Server <i class="fas fa-chevron-right"></i></div>
@@ -156,7 +160,11 @@
             <textarea placeholder="Destination Server IP"></textarea>
             <select><option value="">Subnet Mask</option><option>255.255.255.0</option></select>
             <button class="final-execute">Search DST IP</button>
-            <select multiple><option value="blr-vpn-fw01:0">Add Firewall</option></select>
+            <select multiple>
+            {% for fw in firewalls %}
+            <option value="{{ fw.firewall_hostname }}">{{ fw.firewall_hostname }}</option>
+            {% endfor %}
+            </select>
         </div>
 
         <div class="section-title" onclick="toggleSection(this)">Ports & Protocol <i class="fas fa-chevron-right"></i></div>

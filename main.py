@@ -29,7 +29,8 @@ def get_database():
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request, db: Session = Depends(get_database)):
     rules = db.query(FirewallRule).all()
-    return templates.TemplateResponse("index.html", {"request": request, "rules": rules})
+    firewalls = db.query(FirewallList).all()
+    return templates.TemplateResponse("index.html", {"request": request, "rules": rules, "firewalls": firewalls})
 
 # Handle form submission to add a new rule
 @app.post("/submit-rule")
