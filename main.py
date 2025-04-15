@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends, Form
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from models import FirewallRule
+from models import FirewallRule, FirewallList
 from database import engine, get_db
 from starlette.requests import Request
 import os
@@ -14,6 +14,7 @@ app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
 # Create tables (if not already created)
+FirewallList.__table__.create(bind=engine, checkfirst=True)
 FirewallRule.__table__.create(bind=engine, checkfirst=True)
 
 #Dependency to get DB session
