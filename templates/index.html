@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firewall Rule Manager</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .section-title {
+            font-weight: bold;
+            margin-top: 10px;
+            text-transform: uppercase;
+            color: #000000;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            background: #e9f5ff;
+            border-radius: 5px;
+        }
+        .section-title i {
+            transition: transform 0.3s ease-in-out;
+        }
+        .form-group {
+            display: none;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            background: #f9f9f9;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            min-width: 150px;
+            font-size: 14px;
+        }
+        .form-group textarea {
+            height: 40px;
+            resize: none;
+        }
+        .buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        button {
+            padding: 10px 14px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            min-width: 150px;
+            transition: 0.3s;
+        }
+        .build-batch { background: #28a745; color: white; }
+        .final-execute { background: #007bff; color: white; }
+        .packet-tracer { background: #17a2b8; color: white; }
+        .packet-capture { background: #ffc107; color: black; }
+        .arp { background: #dc3545; color: white; }
+        button:hover {
+            opacity: 0.8;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+        td[data-action="Added to queue"] {
+            background-color: lightyellow;
+        }
+        td[data-action="Connected"] {
+            background-color: lightblue;
+        }
+        td[data-status="Pending"] {
+            background-color: lightcoral;
+        }
+        td[data-status="Completed"] {
+            background-color: lightgreen;
+        }
+        @media (max-width: 768px) {
+            .form-group {
+                flex-direction: column;
+            }
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+
+</head>
+<body>
+    <div class="container">
+        <h2>Firewall Rule Manager</h2>
+
+        <div class="section-title" onclick="toggleSection(this)">ITSR Details <i class="fas fa-chevron-right"></i></div>
+        <div class="form-group">
+            <input type="text" placeholder="ITSR Number">
+            <input type="text" placeholder="Email">
+            <input type="date" placeholder="Date">
+        </div>
+
+        <div class="section-title" onclick="toggleSection(this)">Source Server <i class="fas fa-chevron-right"></i></div>
+        <div class="form-group">
+            <textarea placeholder="Source Server IP"></textarea>
+            <select><option value="">Subnet Mask</option><option>255.255.255.0</option></select>
+            <button class="final-execute">Search SRC IP</button>
+            <select multiple><option value="blr-vpn-fw01:0">Add Firewall</option></select>
+        </div>
+
+        <div class="section-title" onclick="toggleSection(this)">Destination Server <i class="fas fa-chevron-right"></i></div>
+        <div class="form-group">
+            <textarea placeholder="Destination Server IP"></textarea>
+            <select><option value="">Subnet Mask</option><option>255.255.255.0</option></select>
+            <button class="final-execute">Search DST IP</button>
+            <select multiple><option value="blr-vpn-fw01:0">Add Firewall</option></select>
+        </div>
+
+        <div class="section-title" onclick="toggleSection(this)">Ports & Protocol <i class="fas fa-chevron-right"></i></div>
+        <div class="form-group">
+            <input type="text" placeholder="Multiple Ports">
+            <input type="number" placeholder="Start Port">
+            <input type="number" placeholder="End Port">
+            <select><option value="">Protocol</option><option>TCP</option><option>UDP</option></select>
+        </div>
+
+        <div class="buttons">
+            <button class="build-batch">Build Batch</button>
+            <button class="final-execute">Final Execute</button>
+            <button class="packet-tracer">Packet Tracer</button>
+            <button class="packet-capture">Packet Capture</button>
+            <button class="arp">ARP</button>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Model</th>
+                    <th>ITSR Number</th>
+                    <th>Email</th>
+                    <th>Source IP</th>
+                    <th>Destination IP</th>
+                    <th>Port Range</th>
+                    <th>Protocol</th>
+                    <th>Firewall</th>
+                    <th>Action</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for rule in rules %}
+                <tr>
+                    <td>CISCO</td>
+                    <td>{{ rule.itsr_number }}</td>
+                    <td>{{ rule.email }}</td>
+                    <td>{{ rule.source_ip }}</td>
+                    <td>{{ rule.dest_ip }}</td>
+                    <td>{{ rule.port_range_start }} - {{ rule.port_range_end }}</td>
+                    <td>{{ rule.protocol }}</td>
+                    <td>{{ rule.firewall_hostname }}</td>
+                    <td data-action="{{ rule.pre_status }}">{{ rule.pre_status }}</td>
+                    <td data-status="{{ rule.final_status }}">{{ rule.final_status }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+<script>
+    function toggleSection(section) {
+        const formGroup = section.nextElementSibling;
+        const icon = section.querySelector("i");
+        const isVisible = formGroup.style.display === 'flex';
+        formGroup.style.display = isVisible ? 'none' : 'flex';
+        icon.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(90deg)';
+    }
+
+    async function submitForm() {
+        const formData = {
+            itsr_number: document.querySelector('input[placeholder="ITSR Number"]').value,
+            email: document.querySelector('input[placeholder="Email"]').value,
+            source_ip: document.querySelectorAll('textarea[placeholder="Source Server IP"]')[0].value,
+            src_subnet_mask: document.querySelectorAll('select')[0].value,
+            dest_ip: document.querySelectorAll('textarea[placeholder="Destination Server IP"]')[0].value,
+            dest_subnet_mask: document.querySelectorAll('select')[1].value,
+            multiple_ports: document.querySelector('input[placeholder="Multiple Ports"]').value,
+            port_range_start: document.querySelector('input[placeholder="Start Port"]').value,
+            port_range_end: document.querySelector('input[placeholder="End Port"]').value,
+            protocol: document.querySelectorAll('select')[2].value,
+            ports: parseInt(document.querySelector('input[placeholder="Start Port"]').value) || 0,
+            firewall_hostname: "blr-vpn-fw01:0", // Default for now
+            pre_status: "Added to queue",
+            post_status: "Pending",
+            final_status: "Pending"
+        };
+
+        const response = await fetch('/submit-rule', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams(formData).toString()
+        });
+        if (response.ok) {
+            alert('Rule submitted!');
+            location.reload(); // Refresh to show updated table
+        }
+    }
+
+    document.querySelector('.build-batch').addEventListener('click', submitForm);
+</script>
+</html>

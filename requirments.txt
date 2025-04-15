@@ -1,6 +1,0 @@
-cffi==1.17.1
-cryptography==44.0.2
-pycparser==2.22
-PyMySQL==1.1.1
-SQLAlchemy==2.0.40
-typing_extensions==4.13.2

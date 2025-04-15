@@ -1,4 +1,4 @@
-#!/Users/vishal/Practice/firewall_rule_manager/.env/bin/python3.13
+#!/Users/deepu/firewall_rule_manager/.env/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys
