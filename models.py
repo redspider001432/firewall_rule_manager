@@ -1,3 +1,4 @@
+import enum
 from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey
 from database import Base
 import datetime
@@ -26,6 +27,7 @@ class FirewallRule(Base):
     created_by = Column(String(20))
     # Set firewall_hostname as a foreign key referencing firewall_list.firewall_hostname
     firewall_hostname = Column(String(100))
+    firewall_ip = Column(String(20))
 
 class FirewallList(Base):
     __tablename__ = "firewall_list"
@@ -36,3 +38,7 @@ class FirewallList(Base):
     model = Column(String(20))
     context_name = Column(String(20))
 
+class StatusEnum(str, enum.Enum):
+    PENDING = "Pending"
+    COMPLETED = "Completed"
+    FAILED = "Failed"
