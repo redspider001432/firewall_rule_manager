@@ -25,18 +25,14 @@ class FirewallRule(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     created_by = Column(String(20))
     # Set firewall_hostname as a foreign key referencing firewall_list.firewall_hostname
-    firewall_hostname = Column(String(100), ForeignKey("firewall_list.firewall_hostname"))
-    # Optional: Create a relationship to easily access firewall data from a rule
-    firewall = relationship("FirewallList", back_populates="rules")
+    firewall_hostname = Column(String(100))
 
 class FirewallList(Base):
     __tablename__ = "firewall_list"
 
     id = Column(Integer, primary_key=True, index=True)
     ip = Column(String(20))
-    firewall_hostname = Column(String(100),unique=True)
+    firewall_hostname = Column(String(100))
     model = Column(String(20))
     context_name = Column(String(20))
 
-    # Optional: Reverse relationship to get a list of rules associated with this firewall
-    rules = relationship("FirewallRule", back_populates="firewall")

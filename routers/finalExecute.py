@@ -15,9 +15,9 @@ def push_command_to_firewall(ip: str, username: str, password: str, commands: li
     print(f"{ip}")
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh.connect(ip, username=username, password=password)
+    ssh.connect("127.0.0.1", username="vishal", password="#vishu1432")
     for cmd in commands:
-        ssh.exec_command(cmd)
+        print(ssh.exec_command(cmd))
     ssh.close()
 get_current_user = "admin"
 @router.post("/final_execute")
@@ -42,7 +42,7 @@ def final_execute(
     for rule in pending_rules:
         # Build the command list for the rule.
         # Replace the example command with your actual command logic.
-        commands = [f"show version"]
+        commands = [f"ifconfig"]
         try:
             push_command_to_firewall(rule.firewall_hostname, "admin", "admin", commands)
         except Exception as e:
