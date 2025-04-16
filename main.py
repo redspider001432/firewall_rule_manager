@@ -7,11 +7,12 @@ from database import engine, get_db
 from starlette.requests import Request
 import os
 from dotenv import load_dotenv
-
+from routers import finalExecute
 load_dotenv()
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
+app.include_router(finalExecute.router)
 
 # Create tables (if not already created)
 FirewallList.__table__.create(bind=engine, checkfirst=True)
@@ -33,6 +34,8 @@ async def read_root(request: Request, db: Session = Depends(get_database)):
     return templates.TemplateResponse("index.html", {"request": request, "rules": rules, "firewalls": firewalls})
 
 # Handle form submission to add a new rule
+user= "admin"
+password = "admin"
 @app.post("/submit-rule")
 async def submit_rule(
     request: Request,
@@ -68,7 +71,8 @@ async def submit_rule(
         firewall_hostname=firewall_hostname,
         pre_status=pre_status,
         post_status=post_status,
-        final_status=final_status
+        final_status=final_status,
+        created_by=user
     )
    
     db.add(new_rule)

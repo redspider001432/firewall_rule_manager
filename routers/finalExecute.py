@@ -1,49 +1,56 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+import paramiko
+
+# Assume get_db and get_current_user are defined elsewhere
 from database import get_db
 from models import FirewallRule
-import paramiko
 
 router = APIRouter()
 
-def push_command_to_firewall(ip, user, password, commands):
+def push_command_to_firewall(ip: str, username: str, password: str, commands: list):
+    """Push commands to the firewall via SSH."""
+    print("Trying to connect firewall")
+    print("username")
+    print(f"{ip}")
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh.connect(ip, username=user, password=password)
+    ssh.connect(ip, username=username, password=password)
     for cmd in commands:
         ssh.exec_command(cmd)
     ssh.close()
-
-@router.post("/final_execute/{itsr_number}")
-def final_execute_by_itsr(itsr_number: str, db: Session = Depends(get_db)):
-    # Step 1: Get all pending rules for this ITSR
+get_current_user = "admin"
+@router.post("/final_execute")
+def final_execute(
+    db: Session = Depends(get_db),
+    current_user = get_current_user
+):
+    """
+    For the current user, the endpoint:
+    1. Queries all pending firewall rules.
+    2. Pushes the required commands to the firewall.
+    3. Updates the status of each rule upon success.
+    """
     pending_rules = db.query(FirewallRule).filter(
-        FirewallRule.itsr_number == itsr_number,
-        FirewallRule.final_status == "Pending"
+        FirewallRule.final_status == "Pending",
+        FirewallRule.created_by == current_user
     ).all()
 
     if not pending_rules:
-        raise HTTPException(status_code=404, detail="No pending rules for this ITSR")
+        raise HTTPException(status_code=404, detail="No pending rules found for the current user.")
 
-    # Step 2: Execute commands in the firewall
     for rule in pending_rules:
-        commands = [
-            f"object-group network {rule.itsr_number}_SRC",
-            f"network-object host {rule.source_ip}",
-            f"object-group network {rule.itsr_number}_DST",
-            f"network-object host {rule.dest_ip}",
-            f"object-group service TCP-{rule.itsr_number} tcp",
-            f"port-object eq {rule.ports}",
-            f"access-list {rule.itsr_number} extended permit {rule.protocol} object-group {rule.itsr_number}_SRC object-group {rule.itsr_number}_DST object-group TCP-{rule.itsr_number}"
-        ]
-
+        # Build the command list for the rule.
+        # Replace the example command with your actual command logic.
+        commands = [f"show version"]
         try:
-            push_command_to_firewall(rule.firewall_hostname, "fwadmin", "secret", commands)
+            push_command_to_firewall(rule.firewall_hostname, "admin", "admin", commands)
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to push commands: {str(e)}")
 
-    # Step 3: Delete all rules for this ITSR
-    db.query(FirewallRule).filter(FirewallRule.itsr_number == itsr_number).delete()
-    db.commit()
+        # Update the firewall rule status after successful command execution.
+        rule.final_status = "Completed"
+        db.add(rule)
 
-    return {"message": f"Commands executed and rules for ITSR {itsr_number} deleted."}
+    db.commit()
+    return {"message": "Commands executed and firewall rules updated."}

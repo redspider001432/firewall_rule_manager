@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Firewall Rule Manager</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Firewall Rule Manager</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  <style>
         * {
             margin: 0;
             padding: 0;
@@ -129,133 +129,166 @@
                 width: 100%;
             }
         }
-    </style>
-
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Firewall Rule Manager</h2>
+  <div class="container">
+    <h2>Firewall Rule Manager</h2>
 
-        <div class="section-title" onclick="toggleSection(this)">ITSR Details <i class="fas fa-chevron-right"></i></div>
-        <div class="form-group">
-            <input type="text" placeholder="ITSR Number">
-            <input type="text" placeholder="Email">
-            <input type="date" placeholder="Date">
-        </div>
-
-        <div class="section-title" onclick="toggleSection(this)">Source Server <i class="fas fa-chevron-right"></i></div>
-        <div class="form-group">
-            <textarea placeholder="Source Server IP"></textarea>
-            <select><option value="">Subnet Mask</option><option>255.255.255.0</option></select>
-            <button class="final-execute">Search SRC IP</button>
-            <select multiple>
-            {% for fw in firewalls %}
-                <option value="{{ fw.firewall_hostname }}">{{ fw.firewall_hostname }}</option>
-            {% endfor %}
-            </select>
-        </div>
-
-        <div class="section-title" onclick="toggleSection(this)">Destination Server <i class="fas fa-chevron-right"></i></div>
-        <div class="form-group">
-            <textarea placeholder="Destination Server IP"></textarea>
-            <select><option value="">Subnet Mask</option><option>255.255.255.0</option></select>
-            <button class="final-execute">Search DST IP</button>
-            <select multiple>
-            {% for fw in firewalls %}
-            <option value="{{ fw.firewall_hostname }}">{{ fw.firewall_hostname }}</option>
-            {% endfor %}
-            </select>
-        </div>
-
-        <div class="section-title" onclick="toggleSection(this)">Ports & Protocol <i class="fas fa-chevron-right"></i></div>
-        <div class="form-group">
-            <input type="text" placeholder="Multiple Ports">
-            <input type="number" placeholder="Start Port">
-            <input type="number" placeholder="End Port">
-            <select><option value="">Protocol</option><option>TCP</option><option>UDP</option></select>
-        </div>
-
-        <div class="buttons">
-            <button class="build-batch">Build Batch</button>
-            <button class="final-execute">Final Execute</button>
-            <button class="packet-tracer">Packet Tracer</button>
-            <button class="packet-capture">Packet Capture</button>
-            <button class="arp">ARP</button>
-        </div>
-
-        <table>
-            <thead>
-                <tr>
-                    <th>Model</th>
-                    <th>ITSR Number</th>
-                    <th>Email</th>
-                    <th>Source IP</th>
-                    <th>Destination IP</th>
-                    <th>Port Range</th>
-                    <th>Protocol</th>
-                    <th>Firewall</th>
-                    <th>Action</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for rule in rules %}
-                <tr>
-                    <td>CISCO</td>
-                    <td>{{ rule.itsr_number }}</td>
-                    <td>{{ rule.email }}</td>
-                    <td>{{ rule.source_ip }}</td>
-                    <td>{{ rule.dest_ip }}</td>
-                    <td>{{ rule.port_range_start }} - {{ rule.port_range_end }}</td>
-                    <td>{{ rule.protocol }}</td>
-                    <td>{{ rule.firewall_hostname }}</td>
-                    <td data-action="{{ rule.pre_status }}">{{ rule.pre_status }}</td>
-                    <td data-status="{{ rule.final_status }}">{{ rule.final_status }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <!-- ITSR Details Section -->
+    <div class="section-title" onclick="toggleSection(this)">ITSR Details <i class="fas fa-chevron-right"></i></div>
+    <div class="form-group">
+      <!-- The ITSR Number field can still be used during Build Batch if needed -->
+      <input type="text" id="itsr-number" placeholder="ITSR Number" />
+      <input type="text" placeholder="Email">
+      <input type="date" placeholder="Date">
     </div>
-</body>
-<script>
+
+    <!-- Other sections (Source Server, Destination Server, Ports & Protocol) remain unchanged -->
+    <div class="section-title" onclick="toggleSection(this)">Source Server <i class="fas fa-chevron-right"></i></div>
+    <div class="form-group">
+      <textarea placeholder="Source Server IP"></textarea>
+      <select>
+          <option value="">Subnet Mask</option>
+          <option>255.255.255.0</option>
+      </select>
+      <button class="final-execute">Search SRC IP</button>
+      <select multiple>
+      {% for fw in firewalls %}
+          <option value="{{ fw.firewall_hostname }}">{{ fw.firewall_hostname }}</option>
+      {% endfor %}
+      </select>
+    </div>
+
+    <div class="section-title" onclick="toggleSection(this)">Destination Server <i class="fas fa-chevron-right"></i></div>
+    <div class="form-group">
+      <textarea placeholder="Destination Server IP"></textarea>
+      <select>
+          <option value="">Subnet Mask</option>
+          <option>255.255.255.0</option>
+      </select>
+      <button class="final-execute">Search DST IP</button>
+      <select multiple>
+      {% for fw in firewalls %}
+          <option value="{{ fw.firewall_hostname }}">{{ fw.firewall_hostname }}</option>
+      {% endfor %}
+      </select>
+    </div>
+
+    <div class="section-title" onclick="toggleSection(this)">Ports & Protocol <i class="fas fa-chevron-right"></i></div>
+    <div class="form-group">
+      <input type="text" placeholder="Multiple Ports">
+      <input type="number" placeholder="Start Port">
+      <input type="number" placeholder="End Port">
+      <select>
+          <option value="">Protocol</option>
+          <option>TCP</option>
+          <option>UDP</option>
+      </select>
+    </div>
+
+    <div class="buttons">
+      <button class="build-batch">Build Batch</button>
+      <!-- Final execute button now functions without requiring ITSR input -->
+      <button id="final-execute-btn">Final Execute</button>
+      <button class="packet-tracer">Packet Tracer</button>
+      <button class="packet-capture">Packet Capture</button>
+      <button class="arp">ARP</button>
+    </div>
+
+    <!-- Table displaying saved firewall rules -->
+    <table>
+      <thead>
+        <tr>
+          <th>Model</th>
+          <th>ITSR Number</th>
+          <th>Email</th>
+          <th>Source IP</th>
+          <th>Destination IP</th>
+          <th>Port Range</th>
+          <th>Protocol</th>
+          <th>Firewall</th>
+          <th>Action</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rule in rules %}
+        <tr>
+          <td>CISCO</td>
+          <td>{{ rule.itsr_number }}</td>
+          <td>{{ rule.email }}</td>
+          <td>{{ rule.source_ip }}</td>
+          <td>{{ rule.dest_ip }}</td>
+          <td>{{ rule.port_range_start }} - {{ rule.port_range_end }}</td>
+          <td>{{ rule.protocol }}</td>
+          <td>{{ rule.firewall_hostname }}</td>
+          <td data-action="{{ rule.pre_status }}">{{ rule.pre_status }}</td>
+          <td data-status="{{ rule.final_status }}">{{ rule.final_status }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <script>
     function toggleSection(section) {
-        const formGroup = section.nextElementSibling;
-        const icon = section.querySelector("i");
-        const isVisible = formGroup.style.display === 'flex';
-        formGroup.style.display = isVisible ? 'none' : 'flex';
-        icon.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(90deg)';
+      const formGroup = section.nextElementSibling;
+      const icon = section.querySelector("i");
+      const isVisible = formGroup.style.display === 'flex';
+      formGroup.style.display = isVisible ? 'none' : 'flex';
+      icon.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(90deg)';
     }
 
+    // Build Batch form submission remains unchanged
     async function submitForm() {
-        const formData = {
-            itsr_number: document.querySelector('input[placeholder="ITSR Number"]').value,
-            email: document.querySelector('input[placeholder="Email"]').value,
-            source_ip: document.querySelectorAll('textarea[placeholder="Source Server IP"]')[0].value,
-            src_subnet_mask: document.querySelectorAll('select')[0].value,
-            dest_ip: document.querySelectorAll('textarea[placeholder="Destination Server IP"]')[0].value,
-            dest_subnet_mask: document.querySelectorAll('select')[1].value,
-            multiple_ports: document.querySelector('input[placeholder="Multiple Ports"]').value,
-            port_range_start: document.querySelector('input[placeholder="Start Port"]').value,
-            port_range_end: document.querySelector('input[placeholder="End Port"]').value,
-            protocol: document.querySelectorAll('select')[2].value,
-            ports: parseInt(document.querySelector('input[placeholder="Start Port"]').value) || 0,
-            firewall_hostname: "blr-vpn-fw01:0", // Default for now
-            pre_status: "Added to queue",
-            post_status: "Pending",
-            final_status: "Pending"
-        };
+      const formData = {
+        itsr_number: document.getElementById('itsr-number').value,
+        email: document.querySelector('input[placeholder="Email"]').value,
+        source_ip: document.querySelectorAll('textarea[placeholder="Source Server IP"]')[0].value,
+        src_subnet_mask: document.querySelectorAll('select')[0].value,
+        dest_ip: document.querySelectorAll('textarea[placeholder="Destination Server IP"]')[0].value,
+        dest_subnet_mask: document.querySelectorAll('select')[1].value,
+        multiple_ports: document.querySelector('input[placeholder="Multiple Ports"]').value,
+        port_range_start: document.querySelector('input[placeholder="Start Port"]').value,
+        port_range_end: document.querySelector('input[placeholder="End Port"]').value,
+        protocol: document.querySelectorAll('select')[2].value,
+        ports: parseInt(document.querySelector('input[placeholder="Start Port"]').value) || 0,
+        firewall_hostname: "blr-vpn-fw01:0", // Default value; adjust as needed
+        pre_status: "Added to queue",
+        post_status: "Pending",
+        final_status: "Pending"
+      };
 
-        const response = await fetch('/submit-rule', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams(formData).toString()
-        });
-        if (response.ok) {
-            alert('Rule submitted!');
-            location.reload(); // Refresh to show updated table
-        }
+      const response = await fetch('/submit-rule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams(formData).toString()
+      });
+      if (response.ok) {
+        alert('Rule submitted!');
+        location.reload(); // Refresh page to show updated table
+      }
     }
 
     document.querySelector('.build-batch').addEventListener('click', submitForm);
-</script>
+
+    // Final Execute submission handler: no ITSR number is required
+    async function submitFinalExecute() {
+      // Send POST request without ITSR data
+      const response = await fetch('/final_execute', {
+        method: 'POST'
+      });
+      if (response.ok) {
+        const result = await response.json();
+        alert(result.message);
+        location.reload(); // Refresh page to show updated statuses
+      } else {
+        const err = await response.json();
+        alert("Error: " + err.detail);
+      }
+    }
+
+    document.getElementById('final-execute-btn').addEventListener('click', submitFinalExecute);
+  </script>
+</body>
 </html>
