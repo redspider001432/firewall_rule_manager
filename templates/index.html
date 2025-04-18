@@ -153,7 +153,7 @@
           <option>255.255.255.0</option>
       </select>
       <button class="final-execute">Search SRC IP</button>
-      <select multiple>
+      <select id="src-firewall" multiple>
       {% for fw in firewalls %}
           <option value="{{ fw.firewall_hostname }}">{{ fw.firewall_hostname }}</option>
       {% endfor %}
@@ -168,7 +168,7 @@
           <option>255.255.255.0</option>
       </select>
       <button class="final-execute">Search DST IP</button>
-      <select multiple>
+      <select id="dst-firewall" multiple>
       {% for fw in firewalls %}
           <option value="{{ fw.firewall_hostname }}">{{ fw.firewall_hostname }}</option>
       {% endfor %}
@@ -259,6 +259,8 @@
     const portRangeStart  = document.querySelector('input[placeholder="Start Port"]').value;
     const portRangeEnd    = document.querySelector('input[placeholder="End Port"]').value;
     const portsNumeric    = parseInt(portRangeStart, 10) || 0;
+
+    const srcFirewall = document.getElementById('src-firewall').value || document.getElementById('dst-firewall').value
 
     // 5) Build the payload
     const formData = {
