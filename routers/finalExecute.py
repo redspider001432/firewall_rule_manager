@@ -4,7 +4,7 @@ import paramiko
 
 # Assume get_db and get_current_user are defined elsewhere
 from database import get_db
-from models import FirewallRule, FirewallList
+from models import FirewallRule
 
 router = APIRouter()
 
@@ -17,7 +17,7 @@ def push_command_to_firewall(ip: str, username: str, password: str, commands: li
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     ssh.connect("127.0.0.1", username="vishal", password="#vishu1432")
     for cmd in commands:
-        ssh.exec_command(cmd)
+        print(ssh.exec_command(cmd))
     ssh.close()
 get_current_user = "admin"
 @router.post("/final_execute")
@@ -44,7 +44,7 @@ def final_execute(
         # Replace the example command with your actual command logic.
         commands = [f"ifconfig"]
         try:
-            push_command_to_firewall(FirewallList.ip, "admin", "admin", commands)
+            push_command_to_firewall(rule.firewall_hostname, "admin", "admin", commands)
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to push commands: {str(e)}")
 

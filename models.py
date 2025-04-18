@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey
 from database import Base
 import datetime
 from sqlalchemy.orm import relationship
-from ipaddress import IPv4Address
+
 # Model for accessing it with UI
 class FirewallRule(Base):
     __tablename__ = "itsr_rules"
@@ -26,7 +26,6 @@ class FirewallRule(Base):
     created_by = Column(String(20))
     # Set firewall_hostname as a foreign key referencing firewall_list.firewall_hostname
     firewall_hostname = Column(String(100))
-    firewall_ip = Column(String(100))
 
 class FirewallList(Base):
     __tablename__ = "firewall_list"
