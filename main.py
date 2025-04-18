@@ -1,24 +1,17 @@
-from fastapi import FastAPI, Depends, Form
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
+from fastapi import FastAPI, Depends, Request
+from fastapi.responses import HTMLResponse, JSONResponse
+from database import get_db, Base, engine
 from sqlalchemy.orm import Session
 from models import FirewallRule, FirewallList
-from database import engine, get_db
-from starlette.requests import Request
-import os
-from dotenv import load_dotenv
-from routers import finalExecute
-load_dotenv()
+from jinja2 import Environment, FileSystemLoader
 
 app = FastAPI()
-templates = Jinja2Templates(directory="templates")
-app.include_router(finalExecute.router)
 
-# Create tables (if not already created)
-FirewallList.__table__.create(bind=engine, checkfirst=True)
-FirewallRule.__table__.create(bind=engine, checkfirst=True)
-
-#Dependency to get DB session
+# Set up Jinja2 environment
+templates = Environment(loader=FileSystemLoader("templates"))
+FirewallList._table_.create(bind=engine, checkfirst=True)
+FirewallRule._table_.create(bind=engine, checkfirst=True)
+# Dependency to get DB session
 def get_database():
     db = next(get_db())
     try:
@@ -26,59 +19,67 @@ def get_database():
     finally:
         db.close()
 
-# Render the main page with firewall rules
+
+# Route to render the HTML page with filtered rules
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request, db: Session = Depends(get_database)):
-    rules = db.query(FirewallRule).all()
+    rules = db.query(FirewallRule).filter(FirewallRule.final_status != "Completed").all()
     firewalls = db.query(FirewallList).all()
-    return templates.TemplateResponse("index.html", {"request": request, "rules": rules, "firewalls": firewalls})
-
-# Handle form submission to add a new rule
-user= "admin"
-password = "admin"
-@app.post("/submit-rule")
-async def submit_rule(
-    request: Request,
-    itsr_number: str = Form(...),
-    email: str = Form(...),
-    source_ip: str = Form(...),
-    src_subnet_mask: str = Form(...),
-    dest_ip: str = Form(...),
-    dest_subnet_mask: str = Form(...),
-    multiple_ports: str = Form(...),
-    port_range_start: str = Form(...),
-    port_range_end: str = Form(...),
-    protocol: str = Form(...),
-    ports: int = Form(...),
-    firewall_hostname: str = Form(...),
-    pre_status: str = Form(...),
-    post_status: str = Form(...),
-    final_status: str = Form(...),
-    db: Session = Depends(get_database)
-):
-    new_rule = FirewallRule(
-        itsr_number=itsr_number,
-        email=email,
-        source_ip=source_ip,
-        src_subnet_mask=src_subnet_mask,
-        dest_ip=dest_ip,
-        dest_subnet_mask=dest_subnet_mask,
-        multiple_ports=multiple_ports,
-        port_range_start=port_range_start,
-        port_range_end=port_range_end,
-        protocol=protocol,
-        ports=ports,
-        firewall_hostname=firewall_hostname,
-        pre_status=pre_status,
-        post_status=post_status,
-        final_status=final_status,
-        created_by=user
+    return templates.get_template("index"
+    ".html").render(
+        request=request,
+        rules=rules,
+        firewalls=firewalls
     )
-   
+
+# New endpoint to filter rules by firewall
+@app.get("/filter_rules")
+async def filter_rules(firewall: str, type: str, db: Session = Depends(get_database)):
+    query = db.query(FirewallRule).filter(FirewallRule.final_status != "Completed")
+    if type == "src":
+        query = query.filter(FirewallRule.firewall_hostname == firewall)
+    elif type == "dst":
+        query = query.filter(FirewallRule.firewall_hostname == firewall)  # Adjust if destination firewall is a different field
+    rules = query.all()
+    return JSONResponse({"rules": [rule.__dict__ for rule in rules]})
+
+# Handle form submission
+@app.post("/submit-rule")
+async def submit_rule(request: Request, db: Session = Depends(get_database)):
+    form_data = await request.form()
+    new_rule = FirewallRule(
+        itsr_number=form_data.get("itsr_number"),
+        email=form_data.get("email"),
+        source_ip=form_data.get("source_ip"),
+        src_subnet_mask=form_data.get("src_subnet_mask"),
+        dest_ip=form_data.get("dest_ip"),
+        dest_subnet_mask=form_data.get("dest_subnet_mask"),
+        multiple_ports=form_data.get("multiple_ports"),
+        port_range_start=form_data.get("port_range_start"),
+        port_range_end=form_data.get("port_range_end"),
+        protocol=form_data.get("protocol"),
+        ports=int(form_data.get("ports", 0)),
+        firewall_hostname=form_data.get("firewall_hostname", "blr-vpn-fw01:0"),
+        pre_status="Added to queue",
+        post_status="Pending",
+        final_status="Pending"
+    )
     db.add(new_rule)
     db.commit()
-    
-        
-    return {"message": "Rule added successfully"}
+    return {"message": "Rule submitted!"}
 
-# Updated index.html to handle form submission and display dynamic data
+# Final execute route
+@app.post("/final_execute")
+async def final_execute(db: Session = Depends(get_database)):
+    db.query(FirewallRule).filter(FirewallRule.final_status == "Pending").update({"final_status": "Completed"})
+    db.commit()
+    return {"message": "Execution completed, statuses updated!"}
+
+# Create tables
+def init_db():
+    Base.metadata.create_all(bind=engine)
+
+if __name__ == "__main__":
+    init_db()
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
