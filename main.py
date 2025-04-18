@@ -1,16 +1,18 @@
-from fastapi import FastAPI, Depends, Request
+from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from database import get_db, Base, engine
 from sqlalchemy.orm import Session
 from models import FirewallRule, FirewallList
 from jinja2 import Environment, FileSystemLoader
-
+from routers import finalExecute
 app = FastAPI()
 
 # Set up Jinja2 environment
 templates = Environment(loader=FileSystemLoader("templates"))
-FirewallList._table_.create(bind=engine, checkfirst=True)
-FirewallRule._table_.create(bind=engine, checkfirst=True)
+app.include_router(finalExecute.router)
+
+FirewallList.__table__.create(bind=engine, checkfirst=True)
+FirewallRule.__table__.create(bind=engine, checkfirst=True)
 # Dependency to get DB session
 def get_database():
     db = next(get_db())
@@ -43,10 +45,17 @@ async def filter_rules(firewall: str, type: str, db: Session = Depends(get_datab
     rules = query.all()
     return JSONResponse({"rules": [rule.__dict__ for rule in rules]})
 
+
+
 # Handle form submission
 @app.post("/submit-rule")
 async def submit_rule(request: Request, db: Session = Depends(get_database)):
     form_data = await request.form()
+    firewall_hostname = form_data.get("firewall_hostname")
+    firewall = db.query(FirewallList).filter(FirewallList.firewall_hostname == firewall_hostname).first()
+    if not firewall:
+        raise HTTPException(status_code=404, detail="Firewall not found in FirewallList")
+    firewall_ip = firewall.ip
     new_rule = FirewallRule(
         itsr_number=form_data.get("itsr_number"),
         email=form_data.get("email"),
@@ -60,24 +69,26 @@ async def submit_rule(request: Request, db: Session = Depends(get_database)):
         protocol=form_data.get("protocol"),
         ports=int(form_data.get("ports", 0)),
         firewall_hostname=form_data.get("firewall_hostname", "blr-vpn-fw01:0"),
+        firewall_ip = firewall_ip,
         pre_status="Added to queue",
         post_status="Pending",
-        final_status="Pending"
+        final_status="Pending",
+        created_by = "admin"
     )
     db.add(new_rule)
     db.commit()
     return {"message": "Rule submitted!"}
 
-# Final execute route
-@app.post("/final_execute")
-async def final_execute(db: Session = Depends(get_database)):
-    db.query(FirewallRule).filter(FirewallRule.final_status == "Pending").update({"final_status": "Completed"})
-    db.commit()
-    return {"message": "Execution completed, statuses updated!"}
+# # Final execute route
+# @app.post("/final_execute")
+# async def final_execute(db: Session = Depends(get_database)):
+#     db.query(FirewallRule).filter(FirewallRule.final_status == "Pending").update({"final_status": "Completed"})
+#     db.commit()
+#     return {"message": "Execution completed, statuses updated!"}
 
-# Create tables
-def init_db():
-    Base.metadata.create_all(bind=engine)
+# # Create tables
+# def init_db():
+#     Base.metadata.create_all(bind=engine)
 
 if __name__ == "__main__":
     init_db()
