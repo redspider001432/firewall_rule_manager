@@ -36,12 +36,12 @@ def generate_asa_acl_commands(rule: FirewallRule) -> list:
     commands.append(f"object-group network {src_group}")
     for ip in source_ips:
         # Assuming IPs are hosts; adjust if subnet masks are provided
-        commands.append(f" network-object host {ip}")
+        commands.append(f"network-object host {ip}")
 
     # Destination network object group
     commands.append(f"object-group network {dest_group}")
     for ip in dest_ips:
-        commands.append(f" network-object host {ip}")
+        commands.append(f"network-object host {ip}")
 
     # Service object group for TCP/UDP with ports
     has_ports = bool(rule.multiple_ports or 
@@ -52,16 +52,16 @@ def generate_asa_acl_commands(rule: FirewallRule) -> list:
         if rule.multiple_ports:
             ports = [port.strip() for port in rule.multiple_ports.split(",") if port.strip()]
             for port in ports:
-                commands.append(f" port-object eq {port}")
+                commands.append(f"port-object eq {port}")
         if rule.port_range_start and rule.port_range_end:
-            commands.append(f" port-object range {rule.port_range_start} {rule.port_range_end}")
+            commands.append(f"port-object range {rule.port_range_start} {rule.port_range_end}")
         if rule.ports and rule.ports != 0:
-            commands.append(f" port-object eq {rule.ports}")
+            commands.append(f"port-object eq {rule.ports}")
 
     # Generate ACL command
-    acl_cmd = f"access-list ITSR_ACL extended permit {rule.protocol.lower()} object-group {src_group} object-group {dest_group}"
+    acl_cmd = f"access-list low_sec_nonlb_prod-ACL extended permit {rule.protocol.lower()} object-group {src_group} object-group {dest_group}"
     if rule.protocol.lower() in ['tcp', 'udp'] and has_ports:
-        acl_cmd += f" object-group {port_group}"
+        acl_cmd += f"object-group {port_group}"
     commands.append(acl_cmd)
 
     return commands
