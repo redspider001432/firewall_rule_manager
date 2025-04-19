@@ -37,12 +37,12 @@ def generate_asa_acl_commands(rule: FirewallRule) -> list:
     for ip in source_ips:
         # Assuming IPs are hosts; adjust if subnet masks are provided
         commands.append(f"network-object host {ip}")
-
+    commands.append("exit")
     # Destination network object group
     commands.append(f"object-group network {dest_group}")
     for ip in dest_ips:
         commands.append(f"network-object host {ip}")
-
+    commands.append("exit")
     # Service object group for TCP/UDP with ports
     has_ports = bool(rule.multiple_ports or 
                      (rule.port_range_start and rule.port_range_end) or 
@@ -57,13 +57,14 @@ def generate_asa_acl_commands(rule: FirewallRule) -> list:
             commands.append(f"port-object range {rule.port_range_start} {rule.port_range_end}")
         if rule.ports and rule.ports != 0:
             commands.append(f"port-object eq {rule.ports}")
+    commands.append("exit")
 
     # Generate ACL command
     acl_cmd = f"access-list low_sec_nonlb_prod-ACL extended permit {rule.protocol.lower()} object-group {src_group} object-group {dest_group}"
     if rule.protocol.lower() in ['tcp', 'udp'] and has_ports:
         acl_cmd += f"object-group {port_group}"
     commands.append(acl_cmd)
-
+    print(commands)
     return commands
 
 def push_command_to_firewall(ip: str, username: str, password: str, commands: list):
