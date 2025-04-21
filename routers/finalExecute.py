@@ -43,12 +43,21 @@ def generate_asa_acl_commands(rule: FirewallRule) -> list:
         else :
             commands.append(network-object host ip)
         """
-
-        commands.append(f"network-object host {ip}")
+        if "-" in ip:
+            split_ip,subnet =ip.split("-")
+            commands.append(f"network-object {split_ip} {subnet}")
+        else:
+            commands.append(f"network-object host {ip}")
+        
     # Destination network object group
     commands.append(f"object-group network {dest_group}")
     for ip in dest_ips:
-        commands.append(f"network-object host {ip}")
+        if "-" in ip:
+            split_ip,subnet =ip.split("-")
+            commands.append(f"network-object {split_ip} {subnet}")
+        else:
+            commands.append(f"network-object host {ip}")
+        # commands.append(f"network-object host {ip}")
     # Service object group for TCP/UDP with ports
     has_ports = bool(rule.multiple_ports or 
                      (rule.port_range_start and rule.port_range_end) or 
