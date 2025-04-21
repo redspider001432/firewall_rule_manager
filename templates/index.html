@@ -260,7 +260,7 @@
     const portRangeEnd    = document.querySelector('input[placeholder="End Port"]').value;
     const portsNumeric    = parseInt(portRangeStart, 10) || 0;
 
-    const srcFirewall = document.getElementById('src-firewall').value || document.getElementById('dst-firewall').value
+    const firewall_hostname = document.getElementById('src-firewall').value || document.getElementById('dst-firewall').value
 
     // 5) Build the payload
     const formData = {
@@ -277,7 +277,7 @@
       protocol:          proto,
       ports:             portsNumeric,
       // Adjust this or pull from a <select> if you want dynamic firewall selection
-      firewall_hostname: "CiscoRouter1",
+      firewall_hostname: firewall_hostname,
       pre_status:        "Added to queue",
       post_status:       "Pending",
       final_status:      "Pending"

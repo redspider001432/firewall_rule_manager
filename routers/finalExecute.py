@@ -22,9 +22,9 @@ def generate_asa_acl_commands(rule: FirewallRule) -> list:
 
     # Sanitize email and create unique object group names
     sanitized_email = sanitize_email(rule.email)
-    src_group = f"{rule.itsr_number}_{sanitized_email}_SRC_{rule.id}"
-    dest_group = f"{rule.itsr_number}_{sanitized_email}_DEST_{rule.id}"
-    port_group = f"{rule.itsr_number}_{sanitized_email}_PORT_{rule.id}"
+    src_group = f"{rule.itsr_number}_{sanitized_email}_SRC"
+    dest_group = f"{rule.itsr_number}_{sanitized_email}_DST"
+    port_group = f"{rule.itsr_number}_{sanitized_email}_PORT"
 
     # Parse source and destination IPs (supporting commas or newlines)
     source_ips = [ip.strip() for ip in rule.source_ip.replace(",", "\n").split("\n") if ip.strip()]
@@ -36,13 +36,19 @@ def generate_asa_acl_commands(rule: FirewallRule) -> list:
     commands.append(f"object-group network {src_group}")
     for ip in source_ips:
         # Assuming IPs are hosts; adjust if subnet masks are provided
+
+        """ strip ip with '-' if '-' in ip use network command without host else : use with host" '10.01.10.10-255.255.255.0'
+        if - in ip :
+            commands.append(network-object ip subnet)
+        else :
+            commands.append(network-object host ip)
+        """
+
         commands.append(f"network-object host {ip}")
-    commands.append("exit")
     # Destination network object group
     commands.append(f"object-group network {dest_group}")
     for ip in dest_ips:
         commands.append(f"network-object host {ip}")
-    commands.append("exit")
     # Service object group for TCP/UDP with ports
     has_ports = bool(rule.multiple_ports or 
                      (rule.port_range_start and rule.port_range_end) or 
@@ -57,14 +63,13 @@ def generate_asa_acl_commands(rule: FirewallRule) -> list:
             commands.append(f"port-object range {rule.port_range_start} {rule.port_range_end}")
         if rule.ports and rule.ports != 0:
             commands.append(f"port-object eq {rule.ports}")
-    commands.append("exit")
 
     # Generate ACL command
     acl_cmd = f"access-list low_sec_nonlb_prod-ACL extended permit {rule.protocol.lower()} object-group {src_group} object-group {dest_group}"
     if rule.protocol.lower() in ['tcp', 'udp'] and has_ports:
-        acl_cmd += f"object-group {port_group}"
-    commands.append(acl_cmd)
-    print(commands)
+        acl_cmd += f" object-group {port_group}"
+        commands.append(acl_cmd)
+    commands.append("wr")
     return commands
 
 def push_command_to_firewall(ip: str, username: str, password: str, commands: list):
