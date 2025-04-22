@@ -34,16 +34,16 @@ async def read_root(request: Request, db: Session = Depends(get_database)):
         firewalls=firewalls
     )
 
-# New endpoint to filter rules by firewall
-@app.get("/filter_rules")
-async def filter_rules(firewall: str, type: str, db: Session = Depends(get_database)):
-    query = db.query(FirewallRule).filter(FirewallRule.final_status != "Completed")
-    if type == "src":
-        query = query.filter(FirewallRule.firewall_hostname == firewall)
-    elif type == "dst":
-        query = query.filter(FirewallRule.firewall_hostname == firewall)  # Adjust if destination firewall is a different field
-    rules = query.all()
-    return JSONResponse({"rules": [rule.__dict__ for rule in rules]})
+# # New endpoint to filter rules by firewall
+# @app.get("/filter_rules")
+# async def filter_rules(firewall: str, type: str, db: Session = Depends(get_database)):
+#     query = db.query(FirewallRule).filter(FirewallRule.final_status != "Completed")
+#     if type == "src":
+#         query = query.filter(FirewallRule.srcFirewall == firewall)
+#     elif type == "dst":
+#         query = query.filter(FirewallRule.firewall_hostname == firewall)  # Adjust if destination firewall is a different field
+#     rules = query.all()
+#     return JSONResponse({"rules": [rule.__dict__ for rule in rules]})
 
 
 
@@ -51,30 +51,34 @@ async def filter_rules(firewall: str, type: str, db: Session = Depends(get_datab
 @app.post("/submit-rule")
 async def submit_rule(request: Request, db: Session = Depends(get_database)):
     form_data = await request.form()
-    firewall_hostname = form_data.get("firewall_hostname")
-    firewall = db.query(FirewallList).filter(FirewallList.firewall_hostname == firewall_hostname).first()
-    if not firewall:
-        raise HTTPException(status_code=404, detail="Firewall not found in FirewallList")
-    firewall_ip = firewall.ip
+    srcFirewall_hostname = form_data.get("srcFirewall")
+    dstFirewall_hostname = form_data.get("dstFirewall")
+    srcFirewall = db.query(FirewallList).filter(FirewallList.firewall_hostname == srcFirewall_hostname).first()
+    dstFirewall = db.query(FirewallList).filter(FirewallList.firewall_hostname == dstFirewall_hostname).first()
+    if not srcFirewall and dstFirewall:
+        raise HTTPException(status_code=404, detail="Either source firewall or destination firewall is wrong")
+    srcFirewallIP = srcFirewall.ip
+    dstFirewallIP = dstFirewall.ip
     new_rule = FirewallRule(
         itsr_number=form_data.get("itsr_number"),
         email=form_data.get("email"),
         source_ip=form_data.get("source_ip"),
-        src_subnet_mask=form_data.get("src_subnet_mask"),
         dest_ip=form_data.get("dest_ip"),
-        dest_subnet_mask=form_data.get("dest_subnet_mask"),
         multiple_ports=form_data.get("multiple_ports"),
         port_range_start=form_data.get("port_range_start"),
         port_range_end=form_data.get("port_range_end"),
         protocol=form_data.get("protocol"),
         ports=int(form_data.get("ports", 0)),
-        firewall_hostname=form_data.get("firewall_hostname", "blr-vpn-fw01:0"),
-        firewall_ip = firewall_ip,
+        srcFirewall = srcFirewall_hostname,
+        dstFirewall = dstFirewall_hostname,
         pre_status="Added to queue",
         post_status="Pending",
         final_status="Pending",
-        created_by = "admin"
+        created_by = "admin",
+        srcFirewallIP = srcFirewallIP,
+        dstFirewallIP = dstFirewallIP
     )
+    print(f"{srcFirewall_hostname} {dstFirewall_hostname}")
     db.add(new_rule)
     db.commit()
     return {"message": "Rule submitted!"}

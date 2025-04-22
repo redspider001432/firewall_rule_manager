@@ -35,14 +35,6 @@ def generate_asa_acl_commands(rule: FirewallRule) -> list:
     # Source network object group
     commands.append(f"object-group network {src_group}")
     for ip in source_ips:
-        # Assuming IPs are hosts; adjust if subnet masks are provided
-
-        """ strip ip with '-' if '-' in ip use network command without host else : use with host" '10.01.10.10-255.255.255.0'
-        if - in ip :
-            commands.append(network-object ip subnet)
-        else :
-            commands.append(network-object host ip)
-        """
         if "-" in ip:
             split_ip,subnet =ip.split("-")
             commands.append(f"network-object {split_ip} {subnet}")
@@ -118,22 +110,42 @@ def final_execute(db: Session = Depends(get_db), current_user: str = "admin"):
 
     if not pending_rules:
         raise HTTPException(status_code=404, detail="No pending rules found for the current user.")
-
     for rule in pending_rules:
-        firewall_ip = db.query(FirewallList).filter(FirewallList.firewall_hostname == rule.firewall_hostname).first()
-        ip_to_use = firewall_ip.ip if firewall_ip else "127.0.0.1"
-        try:
-            commands = generate_asa_acl_commands(rule)
-            push_command_to_firewall(ip_to_use, "admin", "admin", commands)
-            rule.final_status = "Completed"
-            db.add(rule)
-        except ValueError as ve:
-            print(f"Skipping rule {rule.id}: {str(ve)}")
-            continue
-        except HTTPException as he:
-            raise he
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to process rule {rule.id}: {str(e)}")
+        if rule.srcFirewall == rule.dstFirewall:
+            firewall_ip = db.query(FirewallList).filter(FirewallList.firewall_hostname == rule.srcFirewall).first()
+            ip_to_use = firewall_ip.ip if firewall_ip else "127.0.0.1"
+            try:
+                commands = generate_asa_acl_commands(rule)
+                push_command_to_firewall(ip_to_use, "admin", "admin", commands)
+                rule.final_status = "Completed"
+                db.add(rule)
+            except ValueError as ve:
+                print(f"Skipping rule {rule.id}: {str(ve)}")
+                continue
+            except HTTPException as he:
+                raise he
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Failed to process rule {rule.id}: {str(e)}")
+        elif rule.srcFirewall != rule.dstFirewall:
+            if rule.srcFirewall:
+                src_firewall = db.query(FirewallList).filter(FirewallList.firewall_hostname == rule.srcFirewall).first()
+                dst_firewall = db.query(FirewallList).filter(FirewallList.firewall_hostname == rule.dstFirewall).first()
+                src_ip = src_firewall.ip
+                dst_ip = dst_firewall.ip
+                try:
+                    commands = generate_asa_acl_commands(rule)
+                    push_command_to_firewall(src_ip, "admin", "admin", commands)
+                    push_command_to_firewall(dst_ip,"admin","admin",commands=commands)
+                    rule.final_status = "Completed"
+                    db.add(rule)
+                except ValueError as ve:
+                    print(f"Skipping rule {rule.id}: {str(ve)}")
+                    continue
+                except HTTPException as he:
+                    raise he
+                except Exception as e:
+                    raise HTTPException(status_code=500, detail=f"Failed to process rule {rule.id}: {str(e)}")
 
+                    
     db.commit()
     return {"message": "Commands executed and firewall rules updated successfully."}
