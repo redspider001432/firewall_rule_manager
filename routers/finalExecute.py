@@ -13,6 +13,10 @@ def sanitize_email(email: str) -> str:
 
 def generate_asa_acl_commands(rule: FirewallRule) -> list:
     """
+    Write your logic here to check interface of firewall and conectivity of ips  
+    """
+
+    """
     Generate Cisco ASA commands to create object groups and an ACL based on the firewall rule.
     Returns a list of commands or raises an error if required fields are missing.
     """
@@ -111,7 +115,7 @@ def final_execute(db: Session = Depends(get_db), current_user: str = "admin"):
     if not pending_rules:
         raise HTTPException(status_code=404, detail="No pending rules found for the current user.")
     for rule in pending_rules:
-        if rule.srcFirewall == rule.dstFirewall:
+        if rule.srcFirewall == rule.dstFirewall: # if both firewall hostnames are same we will use the same ip for both 
             firewall_ip = db.query(FirewallList).filter(FirewallList.firewall_hostname == rule.srcFirewall).first()
             ip_to_use = firewall_ip.ip if firewall_ip else "127.0.0.1"
             try:
@@ -126,7 +130,7 @@ def final_execute(db: Session = Depends(get_db), current_user: str = "admin"):
                 raise he
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"Failed to process rule {rule.id}: {str(e)}")
-        elif rule.srcFirewall != rule.dstFirewall:
+        elif rule.srcFirewall != rule.dstFirewall: # if not we have to pass both ips to push in firewalls 
             if rule.srcFirewall:
                 src_firewall = db.query(FirewallList).filter(FirewallList.firewall_hostname == rule.srcFirewall).first()
                 dst_firewall = db.query(FirewallList).filter(FirewallList.firewall_hostname == rule.dstFirewall).first()
@@ -144,8 +148,6 @@ def final_execute(db: Session = Depends(get_db), current_user: str = "admin"):
                 except HTTPException as he:
                     raise he
                 except Exception as e:
-                    raise HTTPException(status_code=500, detail=f"Failed to process rule {rule.id}: {str(e)}")
-
-                    
+                    raise HTTPException(status_code=500, detail=f"Failed to process rule {rule.id}: {str(e)}")                  
     db.commit()
     return {"message": "Commands executed and firewall rules updated successfully."}

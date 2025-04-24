@@ -4,7 +4,7 @@ from database import get_db, Base, engine
 from sqlalchemy.orm import Session
 from models import FirewallRule, FirewallList
 from jinja2 import Environment, FileSystemLoader
-from routers import finalExecute
+from routers import finalExecute, failOver
 app = FastAPI()
 
 # Set up Jinja2 environment
@@ -61,7 +61,12 @@ async def submit_rule(request: Request, db: Session = Depends(get_database)):
         raise HTTPException(status_code=404, detail="Either source firewall or destination firewall is wrong")
     srcFirewallIP = srcFirewall.ip
     dstFirewallIP = dstFirewall.ip
-    interFirewallIP = interFirewall.ip#change row
+    if not failOver(srcFirewallIP, username="your_user", password="your_pass", secret="your_secret"):
+        raise HTTPException(status_code=500, detail=f"{srcFirewall_hostname} is not in ACTIVE state")
+
+    if not failOver(dstFirewallIP, username="your_user", password="your_pass", secret="your_secret"):
+        raise HTTPException(status_code=500, detail=f"{dstFirewall_hostname} is not in ACTIVE state")
+    
     new_rule = FirewallRule(
         itsr_number=form_data.get("itsr_number"),
         email=form_data.get("email"),
@@ -89,3 +94,5 @@ async def submit_rule(request: Request, db: Session = Depends(get_database)):
     db.commit()
     return {"message": "Rule submitted!"}
 
+
+    
