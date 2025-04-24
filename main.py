@@ -53,17 +53,21 @@ async def submit_rule(request: Request, db: Session = Depends(get_database)):
     form_data = await request.form()
     srcFirewall_hostname = form_data.get("srcFirewall")
     dstFirewall_hostname = form_data.get("dstFirewall")
+    interFirewall_hostname = form_data.get("interFirewall")#change row
     srcFirewall = db.query(FirewallList).filter(FirewallList.firewall_hostname == srcFirewall_hostname).first()
     dstFirewall = db.query(FirewallList).filter(FirewallList.firewall_hostname == dstFirewall_hostname).first()
+    interFirewall = db.query(FirewallList).filter(FirewallList.firewall_hostname == interFirewall_hostname).first() #change row
     if not srcFirewall and dstFirewall:
         raise HTTPException(status_code=404, detail="Either source firewall or destination firewall is wrong")
     srcFirewallIP = srcFirewall.ip
     dstFirewallIP = dstFirewall.ip
+    interFirewallIP = interFirewall.ip#change row
     new_rule = FirewallRule(
         itsr_number=form_data.get("itsr_number"),
         email=form_data.get("email"),
         source_ip=form_data.get("source_ip"),
         dest_ip=form_data.get("dest_ip"),
+        inter_ip=form_data.get("intermediate_ip"),#change row
         multiple_ports=form_data.get("multiple_ports"),
         port_range_start=form_data.get("port_range_start"),
         port_range_end=form_data.get("port_range_end"),
@@ -71,12 +75,14 @@ async def submit_rule(request: Request, db: Session = Depends(get_database)):
         ports=int(form_data.get("ports", 0)),
         srcFirewall = srcFirewall_hostname,
         dstFirewall = dstFirewall_hostname,
+        interFirewall = interFirewall_hostname,#change row
         pre_status="Added to queue",
         post_status="Pending",
         final_status="Pending",
         created_by = "admin",
         srcFirewallIP = srcFirewallIP,
-        dstFirewallIP = dstFirewallIP
+        dstFirewallIP = dstFirewallIP,
+        interFirewallIP = interFirewallIP#change row
     )
     print(f"{srcFirewall_hostname} {dstFirewall_hostname}")
     db.add(new_rule)

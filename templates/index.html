@@ -175,6 +175,23 @@
       </select>
     </div>
 
+    
+    <div class="section-title" onclick="toggleSection(this)">Intermidiate Server <i class="fas fa-chevron-right"></i></div>
+    <div class="form-group">
+      <textarea placeholder="Intermidiate Server IP"></textarea>
+      <select id="inter-subnet-mask">
+          <option value="">Subnet Mask</option>
+          <option>255.255.255.0</option>
+      </select>
+      <button class="final-execute">Search DST IP</button>
+      <select id="inter-firewall" multiple>
+      {% for fw in firewalls %}
+          <option value="{{ fw.firewall_hostname }}">{{ fw.firewall_hostname }}</option>
+      {% endfor %}
+      </select>
+    </div>
+
+
     <div class="section-title" onclick="toggleSection(this)">Ports & Protocol <i class="fas fa-chevron-right"></i></div>
     <div class="form-group">
       <input type="text" placeholder="Multiple Ports">
@@ -205,6 +222,7 @@
           <th>Email</th>
           <th>Source IP</th>
           <th>Destination IP</th>
+          <th>Intermediate IP</th> <!--new coll-->
           <th>Port Range</th>
           <th>Protocol</th>
           <th>Firewall</th>
@@ -220,6 +238,7 @@
           <td>{{ rule.email }}</td>
           <td>{{ rule.source_ip }}</td>
           <td>{{ rule.dest_ip }}</td>
+          <td>{{ rule.intermediate_ip | default('') }}</td> <!--add new-->
           <td>{{ rule.port_range_start }} - {{ rule.port_range_end }}</td>
           <td>{{ rule.protocol }}</td>
           <td>{{ rule.firewall_hostname }}</td>
@@ -248,10 +267,11 @@
     // 2) Grab Source / Destination IPs
     const sourceIP      = document.querySelector('textarea[placeholder="Source Server IP"]').value;
     const destinationIP = document.querySelector('textarea[placeholder="Destination Server IP"]').value;
-
+    const IntermediateIP = document.querySelector('textarea[placeholder="Intermidiate Server IP"]').value;
     // 3) Grab your three selects by their new IDs
     const srcMask = document.getElementById('src-subnet-mask').value;
     const dstMask = document.getElementById('dest-subnet-mask').value;
+    const interMask = document.getElementById('inter-subnet-mask').value;
     const proto   = document.getElementById('protocol').value;
 
     // 4) Grab port info
@@ -262,6 +282,7 @@
 
     const srcFirewall = document.getElementById('src-firewall').value;
     const dstFirewall = document.getElementById('dst-firewall').value;
+    const interFirewall = document.getElementById('inter-firewall').value;
     // 5) Build the payload
     const formData = {
       itsr_number:       itsrNumber,
@@ -271,6 +292,8 @@
       src_subnet_mask:   srcMask,
       dest_ip:           destinationIP,
       dest_subnet_mask:  dstMask,
+      inter_ip:           IntermediateIP,
+      inter_subnet_mask:  interMask,
       multiple_ports:    multiplePorts,
       port_range_start:  portRangeStart,
       port_range_end:    portRangeEnd,
@@ -279,6 +302,7 @@
       // Adjust this or pull from a <select> if you want dynamic firewall selection
       srcFirewall: srcFirewall,
       dstFirewall : dstFirewall,
+      interFirewall : interFirewall,
       pre_status:        "Added to queue",
       post_status:       "Pending",
       final_status:      "Pending"
