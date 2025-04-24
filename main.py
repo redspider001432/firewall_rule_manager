@@ -67,6 +67,8 @@ async def submit_rule(request: Request, db: Session = Depends(get_database)):
     if not failOver(dstFirewallIP, username="your_user", password="your_pass", secret="your_secret"):
         raise HTTPException(status_code=500, detail=f"{dstFirewall_hostname} is not in ACTIVE state")
     
+    if not failOver(interFirewall, username="your_user", password="your_pass", secret="your_secret"):
+        raise HTTPException(status_code=500, detail=f"{dstFirewall_hostname} is not in ACTIVE state")
     new_rule = FirewallRule(
         itsr_number=form_data.get("itsr_number"),
         email=form_data.get("email"),

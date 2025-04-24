@@ -29,6 +29,8 @@ class FirewallRule(Base):
     dstFirewall = Column(String(100))
     srcFirewallIP = Column(String(100))
     dstFirewallIP = Column(String(100))
+    interFirewall = Column(String(100))
+    interFirewallIP = Column(String(100))
 
 class FirewallList(Base):
     __tablename__ = "firewall_list"
