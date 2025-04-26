@@ -31,7 +31,7 @@ class FirewallRule(Base):
     dstFirewallIP = Column(String(100))
     interFirewall = Column(String(100))
     interFirewallIP = Column(String(100))
-
+    inLine = Column(String(100))
 class FirewallList(Base):
     __tablename__ = "firewall_list"
 
