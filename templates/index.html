@@ -141,18 +141,12 @@
       <!-- The ITSR Number field can still be used during Build Batch if needed -->
       <input type="text" id="itsr-number" placeholder="ITSR Number" />
       <input type="text" placeholder="Email">
-      <input type="date" placeholder="Date">
     </div>
 
     <!-- Other sections (Source Server, Destination Server, Ports & Protocol) remain unchanged -->
     <div class="section-title" onclick="toggleSection(this)">Source Server <i class="fas fa-chevron-right"></i></div>
     <div class="form-group">
       <textarea placeholder="Source Server IP"></textarea>
-      <select id="src-subnet-mask">
-          <option value="">Subnet Mask</option>
-          <option>255.255.255.0</option>
-      </select>
-      <button class="final-execute">Search SRC IP</button>
       <select id="src-firewall" multiple>
       {% for fw in firewalls %}
           <option value="{{ fw.firewall_hostname }}">{{ fw.firewall_hostname }}</option>
@@ -163,11 +157,6 @@
     <div class="section-title" onclick="toggleSection(this)">Destination Server <i class="fas fa-chevron-right"></i></div>
     <div class="form-group">
       <textarea placeholder="Destination Server IP"></textarea>
-      <select id="dest-subnet-mask">
-          <option value="">Subnet Mask</option>
-          <option>255.255.255.0</option>
-      </select>
-      <button class="final-execute">Search DST IP</button>
       <select id="dst-firewall" multiple>
       {% for fw in firewalls %}
           <option value="{{ fw.firewall_hostname }}">{{ fw.firewall_hostname }}</option>
@@ -178,12 +167,6 @@
     
     <div class="section-title" onclick="toggleSection(this)">Intermidiate Server <i class="fas fa-chevron-right"></i></div>
     <div class="form-group">
-      <textarea placeholder="Intermidiate Server IP"></textarea>
-      <select id="inter-subnet-mask">
-          <option value="">Subnet Mask</option>
-          <option>255.255.255.0</option>
-      </select>
-      <button class="final-execute">Search DST IP</button>
       <select id="inter-firewall" multiple>
       {% for fw in firewalls %}
           <option value="{{ fw.firewall_hostname }}">{{ fw.firewall_hostname }}</option>
@@ -222,7 +205,6 @@
           <th>Email</th>
           <th>Source IP</th>
           <th>Destination IP</th>
-          <th>Intermediate IP</th>
           <th>Port Range</th>
           <th>Protocol</th>
           <th>Source Firewall</th>
@@ -240,7 +222,6 @@
           <td>{{ rule.email }}</td>
           <td>{{ rule.source_ip }}</td>
           <td>{{ rule.dest_ip }}</td>
-          <td>{{ rule.inter_ip | default('') }}</td> <!-- Correct intermediate IP -->
           <td>{{ rule.port_range_start }} - {{ rule.port_range_end }}</td>
           <td>{{ rule.protocol }}</td>
           <td>{{ rule.srcFirewall }}</td> <!-- Correct Source Firewall -->
@@ -272,11 +253,7 @@
     // 2) Grab Source / Destination IPs
     const sourceIP      = document.querySelector('textarea[placeholder="Source Server IP"]').value;
     const destinationIP = document.querySelector('textarea[placeholder="Destination Server IP"]').value;
-    const IntermediateIP = document.querySelector('textarea[placeholder="Intermidiate Server IP"]').value;
     // 3) Grab your three selects by their new IDs
-    const srcMask = document.getElementById('src-subnet-mask').value;
-    const dstMask = document.getElementById('dest-subnet-mask').value;
-    const interMask = document.getElementById('inter-subnet-mask').value;
     const proto   = document.getElementById('protocol').value;
 
     // 4) Grab port info
@@ -292,13 +269,9 @@
     const formData = {
       itsr_number:       itsrNumber,
       email:             email,
-      //request_date: requestDate,
       source_ip:         sourceIP,
-      src_subnet_mask:   srcMask,
       dest_ip:           destinationIP,
-      dest_subnet_mask:  dstMask,
       inter_ip:           IntermediateIP,
-      inter_subnet_mask:  interMask,
       multiple_ports:    multiplePorts,
       port_range_start:  portRangeStart,
       port_range_end:    portRangeEnd,

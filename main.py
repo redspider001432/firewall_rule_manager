@@ -43,10 +43,10 @@ async def submit_rule(request: Request, db: Session = Depends(get_database)):
     srcFirewallIP = srcFirewall.ip
     dstFirewallIP = dstFirewall.ip
 
-    if not failOver(srcFirewallIP, username="your_user", password="your_pass", secret="your_secret"):
+    if not failOver(srcFirewallIP, username="amishra11", password="Dru56%Pty6", secret="Dru56%Pty6"):
         raise HTTPException(status_code=500, detail=f"{srcFirewall_hostname} is not in ACTIVE state")
     print(srcFirewallIP)
-    if not failOver(dstFirewallIP, username="your_user", password="your_pass", secret="your_secret"):
+    if not failOver(dstFirewallIP, username="amishra11", password="Dru56%Pty6", secret="Dru56%Pty6"):
         raise HTTPException(status_code=500, detail=f"{dstFirewall_hostname} is not in ACTIVE state")
  # Extract IPs properly by splitting on any whitespace
     from itertools import product
@@ -95,9 +95,9 @@ async def submit_rule(request: Request, db: Session = Depends(get_database)):
             dst_firewall_ip=rule.dstFirewallIP,
             src_ip=rule.source_ip,
             dst_ip=rule.dest_ip,
-            username="username",
-            password="password",
-            secret="secret",
+            username="amishra11",
+            password="Dru56%Pty6",
+            secret="Dru56%Pty6",
             db=db
         )
     db.commit()
