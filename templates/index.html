@@ -222,10 +222,12 @@
           <th>Email</th>
           <th>Source IP</th>
           <th>Destination IP</th>
-          <th>Intermediate IP</th> <!--new coll-->
+          <th>Intermediate IP</th>
           <th>Port Range</th>
           <th>Protocol</th>
-          <th>Firewall</th>
+          <th>Source Firewall</th>
+          <th>Destination Firewall</th>
+          <th>Intermediate Firewall</th>
           <th>Action</th>
           <th>Status</th>
         </tr>
@@ -238,16 +240,19 @@
           <td>{{ rule.email }}</td>
           <td>{{ rule.source_ip }}</td>
           <td>{{ rule.dest_ip }}</td>
-          <td>{{ rule.intermediate_ip | default('') }}</td> <!--add new-->
+          <td>{{ rule.inter_ip | default('') }}</td> <!-- Correct intermediate IP -->
           <td>{{ rule.port_range_start }} - {{ rule.port_range_end }}</td>
           <td>{{ rule.protocol }}</td>
-          <td>{{ rule.firewall_hostname }}</td>
-          <td data-action="{{ rule.pre_status }}">{{ rule.pre_status }}</td>
-          <td data-status="{{ rule.final_status }}">{{ rule.final_status }}</td>
+          <td>{{ rule.srcFirewall }}</td> <!-- Correct Source Firewall -->
+          <td>{{ rule.dstFirewall }}</td> <!-- Correct Destination Firewall -->
+          <td>{{ rule.interFirewall | default('-') }}</td> <!-- Correct Intermediate Firewall -->
+          <td>{{ rule.pre_status }}</td>
+          <td>{{ rule.final_status }}</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
+    
   </div>
   <script>
     function toggleSection(section) {

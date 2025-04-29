@@ -41,6 +41,7 @@ def generate_asa_acl_commands(rule: FirewallRule) -> list:
     for ip in source_ips:
         if "-" in ip:
             split_ip,subnet =ip.split("-")
+            print()
             commands.append(f"network-object {split_ip} {subnet}")
         else:
             commands.append(f"network-object host {ip}")
@@ -75,6 +76,8 @@ def generate_asa_acl_commands(rule: FirewallRule) -> list:
         acl_cmd += f" object-group {port_group}"
         commands.append(acl_cmd)
     commands.append("wr")
+    print("*"*100)
+    print(commands)
     return commands
 
 def push_command_to_firewall(ip: str, username: str, password: str, commands: list):
