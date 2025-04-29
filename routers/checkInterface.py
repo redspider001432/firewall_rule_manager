@@ -1,145 +1,92 @@
 from netmiko import ConnectHandler, NetmikoTimeoutException, NetmikoAuthenticationException
-from database import get_db, Base, engine
-from models import FirewallRule
+from models import FirewallRule  # Adjust based on your actual imports
 
-
-def get_database():
-    db = next(get_db())
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-def extract_ip(ip_spec):
-    """Extract the IP part before the hyphen, if present."""
-    return ip_spec.split('-')[0] if '-' in ip_spec else ip_spec
-
-# Function to extract outgoing interface from 'show route' output
-def extract_interface(output):
-    """Extract the outgoing interface from the 'show route' output."""
-    lines = output.splitlines()
-    for line in lines:
-        if line.strip().startswith("*") and "via" in line:
-            return line.split("via")[-1].strip()
+def extract_interface(route_output):
+    """Extract the interface name from the 'show route' command output."""
+    # Example output: "Route to 192.168.1.10 via GigabitEthernet0/1"
+    interface = ""
+    for line in route_output.splitlines():
+        if "via" in line:
+            parts = line.split("via")
+            if len(parts) > 1:
+                interface = parts[1].strip().split()[0]  # Extract interface like "GigabitEthernet0/1"
+                return interface
+    print("*"*50,"Interface","*"*50)
+    print(interface)
     return None
 
-# Modified function to check routes across firewalls
-def check_routes_across_firewalls(src_firewall_ip, dst_firewall_ip, username, password, secret, src_ips, dst_ips):
-    """Check routes and return pairs with matching interfaces."""
-    if not src_firewall_ip or not dst_firewall_ip:
-        print("Error: Firewall IP missing")
-        return []
-
-    src_device = {
-        'device_type': 'cisco_asa',
-        'ip': src_firewall_ip,
+def extract_interface_for_ip(firewall_ip, username, password, secret, ip):
+    """Extract the interface for a given IP from a firewall."""
+    device = {
+        'device_type': 'cisco_asa',  # Adjust if your firewalls use a different type
+        'ip': firewall_ip,
         'username': username,
         'password': password,
         'secret': secret
     }
-    dst_device = {
-        'device_type': 'cisco_asa',
-        'ip': dst_firewall_ip,
-        'username': username,
-        'password': password,
-        'secret': secret
-    }
-
-    src_interfaces = {}
     try:
-        with ConnectHandler(**src_device) as src_conn:
-            src_conn.enable()
-            for src_ip in src_ips:
-                ip_only = extract_ip(src_ip)
-                output = src_conn.send_command(f"show route {ip_only}")
-                interface = extract_interface(output)
-                if interface:
-                    src_interfaces[ip_only] = interface
-                else:
-                    print(f"No route found for {ip_only} on source firewall {src_firewall_ip}")
-    except (NetmikoTimeoutException, NetmikoAuthenticationException) as e:
-        print(f"Error connecting to source firewall {src_firewall_ip}: {str(e)}")
-        return []
-
-    dst_interfaces = {}
-    try:
-        with ConnectHandler(**dst_device) as dst_conn:
-            dst_conn.enable()
-            for dst_ip in dst_ips:
-                ip_only = extract_ip(dst_ip)
-                output = dst_conn.send_command(f"show route {ip_only}")
-                interface = extract_interface(output)
-                if interface:
-                    dst_interfaces[ip_only] = interface
-                else:
-                    print(f"No route found for {ip_only} on destination firewall {dst_firewall_ip}")
-    except (NetmikoTimeoutException, NetmikoAuthenticationException) as e:
-        print(f"Error connecting to destination firewall {dst_firewall_ip}: {str(e)}")
-        return []
-
-    matching_pairs = []
-    for src_ip, src_intf in src_interfaces.items():
-        for dst_ip, dst_intf in dst_interfaces.items():
-            if src_intf == dst_intf:
-                matching_pairs.append((src_ip, dst_ip, src_intf))
-
-    return matching_pairs
-
-# Main function to update inLine status
-def update_inline_status():
-    db = next(get_db())
-    try:
-        # Retrieve all firewall rules
-        rules = db.query(FirewallRule).all()
-
-        # Firewall credentials (replace with secure method in production)
-        username = "admin"  # Replace with actual username
-        password = "cisco"  # Replace with actual password
-        secret = "cisco"    # Replace with actual secret
-
-        for rule in rules:
-            # Skip rules with missing firewall IPs
-            if not rule.srcFirewallIP or not rule.dstFirewallIP:
-                print(f"Skipping rule {rule.id}: Missing firewall IP")
-                continue
-
-            # Parse source and destination IPs (handle comma-separated lists)
-            src_ips = [ip.strip() for ip in rule.source_ip.split(',')] if rule.source_ip else []
-            dst_ips = [ip.strip() for ip in rule.dest_ip.split(',')] if rule.dest_ip else []
-
-            if not src_ips or not dst_ips:
-                print(f"Skipping rule {rule.id}: No source or destination IPs")
-                continue
-
-            # Check for matching interfaces
-            matching_pairs = check_routes_across_firewalls(
-                src_firewall_ip=rule.srcFirewallIP,
-                dst_firewall_ip=rule.dstFirewallIP,
-                username=username,
-                password=password,
-                secret=secret,
-                src_ips=src_ips,
-                dst_ips=dst_ips
-            )
-
-            # Update inLine field if any pair has matching interfaces
-            if matching_pairs:
-                rule.inLine = "inline"
-                db.commit()
-                print(f"Updated rule {rule.id}: inLine set to 'inline' for pairs {matching_pairs}")
+        with ConnectHandler(**device) as conn:
+            conn.enable()
+            output = conn.send_command(f"show route {ip}")
+            interface = extract_interface(output)
+            if interface:
+                return interface
             else:
-                # Optionally set to "not inline" if no matches
-                if rule.inLine != "inline":
-                    rule.inLine = "not inline"
-                    db.commit()
-                    print(f"Updated rule {rule.id}: inLine set to 'not inline'")
+                print(f"No route found for IP {ip} on firewall {firewall_ip}")
+                return None
+    except (NetmikoTimeoutException, NetmikoAuthenticationException) as e:
+        print(f"Error connecting to firewall {firewall_ip}: {str(e)}")
+        return None
+
+def update_firewall_interfaces_for_rule(src_firewall_ip, dst_firewall_ip, src_ip, dst_ip, username, password, secret, db):
+    """Update src_interface and dst_interface for a specific rule based on src_ip and dst_ip."""
+    try:
+        # Find the rule that matches the provided src_ip and dst_ip
+        rule = db.query(FirewallRule).filter_by(source_ip=src_ip, dest_ip=dst_ip).first()
+        
+        if not rule:
+            print(f"No rule found for src_ip={src_ip} and dst_ip={dst_ip}")
+            return
+
+        # Check if the firewall IPs match the rule's firewall IPs
+        if rule.srcFirewallIP != src_firewall_ip or rule.dstFirewallIP != dst_firewall_ip:
+            print(f"Firewall IP mismatch for rule {rule.id}")
+            return
+
+        # Extract interface for source IP from source firewall
+        src_interface = extract_interface_for_ip(
+            firewall_ip=src_firewall_ip,
+            username=username,
+            password=password,
+            secret=secret,
+            ip=src_ip
+        )
+
+        # Extract interface for destination IP from destination firewall
+        dst_interface = extract_interface_for_ip(
+            firewall_ip=dst_firewall_ip,
+            username=username,
+            password=password,
+            secret=secret,
+            ip=dst_ip
+        )
+
+        # Update the rule in the database if interfaces are found
+        if src_interface and dst_interface:
+            if src_interface == dst_interface:
+                rule.inline = "inline"
+            else: 
+                rule.inline = "not inline"
+            rule.src_interface = src_interface
+            rule.dst_interface = dst_interface
+            db.commit()
+            print(f"Updated rule {rule.id}: src_interface={src_interface}, dst_interface={dst_interface}")
+        else:
+            print(f"Failed to update rule {rule.id}: Could not extract one or both interfaces")
 
     except Exception as e:
-        print(f"Error processing rules: {str(e)}")
+        print(f"Error processing rule for src_ip={src_ip}, dst_ip={dst_ip}: {str(e)}")
         db.rollback()
-    finally:
-        db.close()
 
 
 """

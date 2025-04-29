@@ -11,9 +11,7 @@ class FirewallRule(Base):
     itsr_number = Column(String(50), index=True)
     email = Column(String(100))
     source_ip = Column(Text)
-    src_subnet_mask = Column(String(50))
     dest_ip = Column(Text)
-    dest_subnet_mask = Column(String(50))
     inter_ip =Column(Text)
     src_interface=Column(Text)
     dst_interface =Column(Text)
@@ -33,8 +31,8 @@ class FirewallRule(Base):
     srcFirewallIP = Column(String(100))
     dstFirewallIP = Column(String(100))
     interFirewall = Column(String(100))
-    interFirewallIP = Column(String(100))
     inLine = Column(String(100))
+    
 class FirewallList(Base):
     __tablename__ = "firewall_list"
 
