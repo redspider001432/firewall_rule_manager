@@ -74,9 +74,9 @@ def update_firewall_interfaces_for_rule(src_firewall_ip, dst_firewall_ip, src_ip
         # Update the rule in the database if interfaces are found
         if src_interface and dst_interface:
             if src_interface == dst_interface:
-                rule.inline = "inline"
+                rule.inLine = "inline"
             else: 
-                rule.inline = "not inline"
+                rule.inLine = "not inline"
             rule.src_interface = src_interface
             rule.dst_interface = dst_interface
             db.commit()
