@@ -29,19 +29,6 @@ async def read_root(request: Request, db: Session = Depends(get_database)):
         firewalls=firewalls
     )
 
-# # New endpoint to filter rules by firewall
-# @app.get("/filter_rules")
-# async def filter_rules(firewall: str, type: str, db: Session = Depends(get_database)):
-#     query = db.query(FirewallRule).filter(FirewallRule.final_status != "Completed")
-#     if type == "src":
-#         query = query.filter(FirewallRule.srcFirewall == firewall)
-#     elif type == "dst":
-#         query = query.filter(FirewallRule.firewall_hostname == firewall)  # Adjust if destination firewall is a different field
-#     rules = query.all()
-#     return JSONResponse({"rules": [rule.__dict__ for rule in rules]})
-
-
-
 # Handle form submission
 @app.post("/submit-rule")
 async def submit_rule(request: Request, db: Session = Depends(get_database)):

@@ -1,20 +1,15 @@
 from netmiko import ConnectHandler, NetmikoTimeoutException, NetmikoAuthenticationException
 from models import FirewallRule  # Adjust based on your actual imports
+import re 
 
 def extract_interface(route_output):
     """Extract the interface name from the 'show route' command output."""
     # Example output: "Route to 192.168.1.10 via GigabitEthernet0/1"
-    interface = ""
-    for line in route_output.splitlines():
-        if "via" in line:
-            parts = line.split("via")
-            if len(parts) > 1:
-                interface = parts[1].strip().split()[0]  # Extract interface like "GigabitEthernet0/1"
-                return interface
-    print("*"*50,"Interface","*"*50)
+    candidates = re.findall(r'via\s+([^\s,()]+)', route_output)
+    interfaces = [i for i in candidates if i.lower() != 'interface']
+    interface =  interfaces[-1] if interfaces else None
     print(interface)
-    return None
-
+    return interface
 def extract_interface_for_ip(firewall_ip, username, password, secret, ip):
     """Extract the interface for a given IP from a firewall."""
     device = {
