@@ -1,6 +1,7 @@
 from netmiko import ConnectHandler, NetmikoTimeoutException, NetmikoAuthenticationException
 from models import FirewallRule  # Adjust based on your actual imports
 import re 
+from routers.packetInputTracer import *
 
 def extract_interface(route_output):
     """Extract the interface name from the 'show route' command output."""
@@ -38,7 +39,6 @@ def update_firewall_interfaces_for_rule(src_firewall_ip, dst_firewall_ip, src_ip
     try:
         # Find the rule that matches the provided src_ip and dst_ip
         rule = db.query(FirewallRule).filter_by(source_ip=src_ip, dest_ip=dst_ip).first()
-        
         if not rule:
             print(f"No rule found for src_ip={src_ip} and dst_ip={dst_ip}")
             return
@@ -70,6 +70,15 @@ def update_firewall_interfaces_for_rule(src_firewall_ip, dst_firewall_ip, src_ip
         if src_interface and dst_interface:
             if src_interface == dst_interface:
                 rule.inLine = "inline"
+                status = packetInputTracer(
+                    rule=rule,
+                    src_firewall_ip=src_firewall_ip,
+                    dst_firewall_ip=dst_firewall_ip,
+                    username=username,
+                    password=password,
+                    db=db
+                )
+                print(status)
             else: 
                 rule.inLine = "not inline"
             rule.src_interface = src_interface
@@ -82,10 +91,3 @@ def update_firewall_interfaces_for_rule(src_firewall_ip, dst_firewall_ip, src_ip
     except Exception as e:
         print(f"Error processing rule for src_ip={src_ip}, dst_ip={dst_ip}: {str(e)}")
         db.rollback()
-
-
-"""
-combination 
-inline 
-
-"""

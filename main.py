@@ -4,7 +4,8 @@ from database import get_db, Base, engine
 from sqlalchemy.orm import Session
 from models import FirewallRule, FirewallList
 from jinja2 import Environment, FileSystemLoader
-from routers import finalExecute, failOver, checkInterface
+from routers import finalExecute, checkInterface
+from routers.failOver import failOver
 app = FastAPI()
 
 # Set up Jinja2 environment
@@ -63,7 +64,6 @@ async def submit_rule(request: Request, db: Session = Depends(get_database)):
             email=form_data.get("email"),
             source_ip=src_ip,
             dest_ip=dst_ip,
-            inter_ip="",  # Leave intermediate IP empty
             multiple_ports=form_data.get("multiple_ports"),
             port_range_start=form_data.get("port_range_start"),
             port_range_end=form_data.get("port_range_end"),
@@ -88,7 +88,7 @@ async def submit_rule(request: Request, db: Session = Depends(get_database)):
         db.add(new_rule)
         created_rule.append(new_rule)
 
-
+    
     for rule in created_rule:
         checkInterface.update_firewall_interfaces_for_rule(
             src_firewall_ip=rule.srcFirewallIP,
