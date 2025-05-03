@@ -69,7 +69,10 @@ def update_firewall_interfaces_for_rule(src_firewall_ip, dst_firewall_ip, src_ip
         # Update the rule in the database if interfaces are found
         if src_interface and dst_interface:
             if src_interface == dst_interface:
+                rule.inLine = "not inline"
+            else: 
                 rule.inLine = "inline"
+                db.flush()
                 status = packetInputTracer(
                     rule=rule,
                     src_firewall_ip=src_firewall_ip,
@@ -78,9 +81,7 @@ def update_firewall_interfaces_for_rule(src_firewall_ip, dst_firewall_ip, src_ip
                     password=password,
                     db=db
                 )
-                print(status)
-            else: 
-                rule.inLine = "not inline"
+                print("*"*50,status)
             rule.src_interface = src_interface
             rule.dst_interface = dst_interface
             db.commit()

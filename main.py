@@ -87,7 +87,7 @@ async def submit_rule(request: Request, db: Session = Depends(get_database)):
 
         db.add(new_rule)
         created_rule.append(new_rule)
-
+    db.flush()
     
     for rule in created_rule:
         checkInterface.update_firewall_interfaces_for_rule(
