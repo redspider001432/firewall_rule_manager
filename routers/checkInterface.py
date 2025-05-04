@@ -11,6 +11,12 @@ def extract_interface(route_output):
     interface =  interfaces[-1] if interfaces else None
     print(interface)
     return interface
+
+def extract_default_interface(output):
+    for lines in output:
+        if "0.0.0.0" in lines:
+            return lines.split(",")[-1].strip()
+
 def extract_interface_for_ip(firewall_ip, username, password, secret, ip):
     """Extract the interface for a given IP from a firewall."""
     device = {
@@ -66,7 +72,34 @@ def update_firewall_interfaces_for_rule(src_firewall_ip, dst_firewall_ip, src_ip
             ip=dst_ip
         )
 
-        # Update the rule in the database if interfaces are found
+        if not src_interface:
+            try:
+                with ConnectHandler(**device) as conn:
+                    conn.enable()
+                    output = conn.send_command(f"show route")
+                    interface = extract_default_interface(output)
+                    if interface:
+                        return interface
+                    else:
+                        print(f"No route found for IP {src_ip} on firewall")
+                        return None
+            except (NetmikoTimeoutException, NetmikoAuthenticationException) as e:
+                print(f"Error connecting to firewall: {str(e)}")
+                return None
+        if not dst_interface:
+            try:
+                with ConnectHandler(**device) as conn:
+                    conn.enable()
+                    output = conn.send_command(f"show route")
+                    interface = extract_default_interface(output)
+                    if interface:
+                        return interface
+                    else:
+                        print(f"No route found for IP {dst_ip} on firewall")
+                        return None
+            except (NetmikoTimeoutException, NetmikoAuthenticationException) as e:
+                print(f"Error connecting to firewall: {str(e)}")
+                return None
         if src_interface and dst_interface:
             if src_interface == dst_interface:
                 rule.inLine = "not inline"

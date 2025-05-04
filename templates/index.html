@@ -148,6 +148,7 @@
     <div class="form-group">
       <textarea placeholder="Source Server IP"></textarea>
       <select id="src-firewall" multiple>
+        <option value="None">None</option>
       {% for fw in firewalls %}
           <option value="{{ fw.firewall_hostname }}">{{ fw.firewall_hostname }}</option>
       {% endfor %}
@@ -158,6 +159,7 @@
     <div class="form-group">
       <textarea placeholder="Destination Server IP"></textarea>
       <select id="dst-firewall" multiple>
+          <option value="None">None</option>
       {% for fw in firewalls %}
           <option value="{{ fw.firewall_hostname }}">{{ fw.firewall_hostname }}</option>
       {% endfor %}

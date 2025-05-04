@@ -1,7 +1,7 @@
 from database import get_db
 from netmiko import ConnectHandler, NetmikoTimeoutException, NetmikoAuthenticationException
 from sqlalchemy.orm import Session
-from database import FirewallRule  # Assuming this is your model file
+from models import FirewallRule  # Assuming this is your model file
 
 def parse_packet_tracer_output(output):
     """

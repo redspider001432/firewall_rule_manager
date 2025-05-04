@@ -35,9 +35,14 @@ class FirewallRule(Base):
     dst_Action = Column(String(10))
     src_Reason = Column(Text)
     dst_Reason = Column(Text)
+    post_src_action = Column(Text)
+    post_dst_actiom = Column(Text)
+    post_src_reason = Column(Text)
+    post_dst_reason = Column(Text)
     
 class FirewallList(Base):
     __tablename__ = "firewall_list"
+
 
     id = Column(Integer, primary_key=True, index=True)
     ip = Column(String(20))
