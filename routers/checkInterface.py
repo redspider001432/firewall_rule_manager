@@ -53,7 +53,8 @@ def update_firewall_interfaces_for_rule(src_firewall_ip, dst_firewall_ip, src_ip
         if rule.srcFirewallIP != src_firewall_ip or rule.dstFirewallIP != dst_firewall_ip:
             print(f"Firewall IP mismatch for rule {rule.id}")
             return
-
+        src_interface = None
+        dst_interface =  None
         # Extract interface for source IP from source firewall
         src_interface = extract_interface_for_ip(
             firewall_ip=src_firewall_ip,
@@ -100,7 +101,7 @@ def update_firewall_interfaces_for_rule(src_firewall_ip, dst_firewall_ip, src_ip
             except (NetmikoTimeoutException, NetmikoAuthenticationException) as e:
                 print(f"Error connecting to firewall: {str(e)}")
                 return None
-        if src_interface and dst_interface:
+        if src_interface or dst_interface:
             if src_interface == dst_interface:
                 rule.inLine = "not inline"
             else: 
