@@ -12,15 +12,33 @@ def extract_interface(route_output):
     print(interface)
     return interface
 
-def extract_default_interface(output):
-    for lines in output:
-        if "0.0.0.0" in lines:
-            return lines.split(",")[-1].strip()
-
+def extract_default_interface(firewall_ip, username, password, secret):
+    print(f"For default interface {firewall_ip},{username},{password} , {secret}")
+    """Extract the interface for a given IP from a firewall."""
+    device = {
+        'device_type': 'cisco_asa',
+        'ip': firewall_ip,
+        'username': username,
+        'password': password,
+        'secret': secret
+    }
+    try:
+        with ConnectHandler(**device) as conn:
+            conn.enable()
+            output = conn.send_command(f"show route")
+            print("*"*50)
+            print(output.splitlines())
+            print("*"*50)
+            for line in output.splitlines():
+                if "S*" in line:
+                    print(line.split(",")[-1].strip())
+                    return line.split(",")[-1].strip()
+    except:
+        print("Wasnt able to connect firewall for default interface 33")
 def extract_interface_for_ip(firewall_ip, username, password, secret, ip):
     """Extract the interface for a given IP from a firewall."""
     device = {
-        'device_type': 'cisco_asa',  # Adjust if your firewalls use a different type
+        'device_type': 'cisco_asa',
         'ip': firewall_ip,
         'username': username,
         'password': password,
@@ -39,7 +57,6 @@ def extract_interface_for_ip(firewall_ip, username, password, secret, ip):
     except (NetmikoTimeoutException, NetmikoAuthenticationException) as e:
         print(f"Error connecting to firewall {firewall_ip}: {str(e)}")
         return None
-
 def update_firewall_interfaces_for_rule(src_firewall_ip, dst_firewall_ip, src_ip, dst_ip, username, password, secret, db):
     """Update src_interface and dst_interface for a specific rule based on src_ip and dst_ip."""
     try:
@@ -53,8 +70,6 @@ def update_firewall_interfaces_for_rule(src_firewall_ip, dst_firewall_ip, src_ip
         if rule.srcFirewallIP != src_firewall_ip or rule.dstFirewallIP != dst_firewall_ip:
             print(f"Firewall IP mismatch for rule {rule.id}")
             return
-        src_interface = None
-        dst_interface =  None
         # Extract interface for source IP from source firewall
         src_interface = extract_interface_for_ip(
             firewall_ip=src_firewall_ip,
@@ -63,7 +78,7 @@ def update_firewall_interfaces_for_rule(src_firewall_ip, dst_firewall_ip, src_ip
             secret=secret,
             ip=src_ip
         )
-
+        print(f"{src_interface} after extracting it from firewall")
         # Extract interface for destination IP from destination firewall
         dst_interface = extract_interface_for_ip(
             firewall_ip=dst_firewall_ip,
@@ -72,35 +87,13 @@ def update_firewall_interfaces_for_rule(src_firewall_ip, dst_firewall_ip, src_ip
             secret=secret,
             ip=dst_ip
         )
-
-        if not src_interface:
-            try:
-                with ConnectHandler(**device) as conn:
-                    conn.enable()
-                    output = conn.send_command(f"show route")
-                    interface = extract_default_interface(output)
-                    if interface:
-                        return interface
-                    else:
-                        print(f"No route found for IP {src_ip} on firewall")
-                        return None
-            except (NetmikoTimeoutException, NetmikoAuthenticationException) as e:
-                print(f"Error connecting to firewall: {str(e)}")
-                return None
-        if not dst_interface:
-            try:
-                with ConnectHandler(**device) as conn:
-                    conn.enable()
-                    output = conn.send_command(f"show route")
-                    interface = extract_default_interface(output)
-                    if interface:
-                        return interface
-                    else:
-                        print(f"No route found for IP {dst_ip} on firewall")
-                        return None
-            except (NetmikoTimeoutException, NetmikoAuthenticationException) as e:
-                print(f"Error connecting to firewall: {str(e)}")
-                return None
+        print(f"{dst_interface} after extracting it from firewall")
+        if src_interface is None:
+            src_interface = extract_default_interface(firewall_ip=src_firewall_ip, username=username, password=password, secret=secret)
+            print("*"*200,src_interface)
+        if dst_interface is None:
+            dst_interface = extract_default_interface(firewall_ip=dst_firewall_ip, username=username, password=password, secret=secret)
+            print("*"*200,dst_interface)
         if src_interface or dst_interface:
             if src_interface == dst_interface:
                 rule.inLine = "not inline"

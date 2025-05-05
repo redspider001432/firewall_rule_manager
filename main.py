@@ -41,14 +41,16 @@ async def submit_rule(request: Request, db: Session = Depends(get_database)):
     dstFirewall = db.query(FirewallList).filter(FirewallList.firewall_hostname == dstFirewall_hostname).first()
     if not srcFirewall and not dstFirewall:
         raise HTTPException(status_code=404, detail="Either source firewall or destination firewall is wrong")
-    srcFirewallIP = srcFirewall.ip
-    dstFirewallIP = dstFirewall.ip
+    srcFirewallIP = srcFirewall.ip if srcFirewall else None
+    dstFirewallIP = dstFirewall.ip if dstFirewall else None
 
-    if not failOver(srcFirewallIP, username="amishra11", password="Dru56%Pty6", secret="Dru56%Pty6"):
-        raise HTTPException(status_code=500, detail=f"{srcFirewall_hostname} is not in ACTIVE state")
+    if srcFirewallIP:
+        if not failOver(srcFirewallIP, username="amishra11", password="Dru56%Pty6", secret="Dru56%Pty6"):
+            raise HTTPException(status_code=500, detail=f"{srcFirewall_hostname} is not in ACTIVE state")
     print(srcFirewallIP)
-    if not failOver(dstFirewallIP, username="amishra11", password="Dru56%Pty6", secret="Dru56%Pty6"):
-        raise HTTPException(status_code=500, detail=f"{dstFirewall_hostname} is not in ACTIVE state")
+    if dstFirewallIP:
+        if not failOver(dstFirewallIP, username="amishra11", password="Dru56%Pty6", secret="Dru56%Pty6"):
+            raise HTTPException(status_code=500, detail=f"{dstFirewall_hostname} is not in ACTIVE state")
  # Extract IPs properly by splitting on any whitespace
     from itertools import product
 
@@ -57,8 +59,10 @@ async def submit_rule(request: Request, db: Session = Depends(get_database)):
     dest_ips = [ip.strip() for ip in form_data.get("dest_ip", "").split() if ip.strip()]
 
     # Generate all permutations of source and destination IPs
+    src_ip_list = source_ips or [None]
+    dst_ip_list = dest_ips or [None]
     created_rule = []
-    for index, (src_ip, dst_ip) in enumerate(product(source_ips, dest_ips)):
+    for index, (src_ip, dst_ip) in enumerate(product(src_ip_list, dst_ip_list)):
         new_rule = FirewallRule(
             itsr_number=form_data.get("itsr_number"),
             email=form_data.get("email"),
