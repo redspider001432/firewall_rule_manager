@@ -49,7 +49,7 @@ def packetInputTracer(rule, src_firewall_ip, dst_firewall_ip, username, password
 
     # Determine protocol and ports
     protocol = rule.protocol.lower() if rule.protocol else "tcp"
-    ports = rule.ports  # Use first port or default to 80
+    ports = rule.multiple_ports  # Use first port or default to 80
 
     # Generate Packet Tracer commands
     src_command = f"packet-tracer input {rule.src_interface} {protocol} {rule.source_ip} 12345 {rule.dest_ip} {ports}"

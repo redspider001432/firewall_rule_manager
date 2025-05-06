@@ -93,7 +93,7 @@ def update_firewall_interfaces_for_rule(src_firewall_ip, dst_firewall_ip, src_ip
             print("*"*200,src_interface)
         if dst_interface is None:
             dst_interface = extract_default_interface(firewall_ip=dst_firewall_ip, username=username, password=password, secret=secret)
-            print("*"*200,dst_interface)
+            print("*"*200,dst_interface) 
         if src_interface or dst_interface:
             if src_interface == dst_interface:
                 rule.inLine = "not inline"

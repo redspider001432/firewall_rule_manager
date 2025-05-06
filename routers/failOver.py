@@ -4,7 +4,8 @@ from netmiko import ConnectHandler, NetmikoTimeoutException, NetmikoAuthenticati
 
 def failOver(ip,username,password,secret) -> bool : 
     if not ip :
-        return ValueError("Firewall IP is missing")
+        print("No ip for failover")
+        return True
     device = {
     'device_type': 'cisco_asa',
     'ip': ip,

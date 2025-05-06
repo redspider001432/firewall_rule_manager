@@ -149,8 +149,8 @@ def final_execute(db: Session = Depends(get_db), current_user: str = "admin"):
                     print(f"Skipping rule {rule.id}: {str(ve)}")
                     continue
                 except HTTPException as he:
-                    raise he
+                    print("Http exception occured final execute should be continued")
                 except Exception as e:
-                    raise HTTPException(status_code=500, detail=f"Failed to process rule {rule.id}: {str(e)}")                  
+                    print("Failed to push rule in firewall")                
     db.commit()
     return {"message": "Commands executed and firewall rules updated successfully."}
