@@ -86,27 +86,19 @@ def update_firewall_interfaces_for_rule(src_firewall_ip, dst_firewall_ip, src_ip
             ip=dst_ip
         )
         print(f"{dst_interface} after extracting it from firewall")
-        if src_interface is None:
-            src_interface = extract_default_interface(firewall_ip=src_firewall_ip, username=username, password=password, secret=secret)
-            print("*"*200,src_interface)
-        if dst_interface is None:
-            dst_interface = extract_default_interface(firewall_ip=dst_firewall_ip, username=username, password=password, secret=secret)
-            print("*"*200,dst_interface) 
-        if src_firewall_ip is None or dst_firewall_ip is None:
-            if src_interface == dst_interface:
-                rule.src_interface = "No route found"
-                rule.dst_interface = "No route found"
-                status = packetInputTracer(
-                    rule=rule,
-                    src_firewall_ip=src_firewall_ip,
-                    dst_firewall_ip=dst_firewall_ip,
-                    username=username,
-                    password=password,
-                    db=db
-                )
-                db.flush()
+        if (src_interface is None and dst_interface is not None) or (src_interface is not None and dst_interface is None): 
+            if src_interface is None: 
+                src_interface = extract_default_interface(firewall_ip=src_firewall_ip, username=username, password=password, secret=secret)
+                print("*"*200,src_interface)
+            if dst_interface is None:
+                dst_interface = extract_default_interface(firewall_ip=dst_firewall_ip, username=username, password=password, secret=secret)
+                print("*"*200,dst_interface) 
+        else:
+            if src_interface is None and dst_interface is None:
+                rule.pre_status = "No route available"
+                rule.post_status= "No route available"
                 db.commit()
-                return
+                return None
         if src_interface or dst_interface:
             if src_interface == dst_interface:
                 rule.inLine = "not inline"
