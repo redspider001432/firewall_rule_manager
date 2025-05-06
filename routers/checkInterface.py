@@ -64,12 +64,10 @@ def update_firewall_interfaces_for_rule(src_firewall_ip, dst_firewall_ip, src_ip
         rule = db.query(FirewallRule).filter_by(source_ip=src_ip, dest_ip=dst_ip).first()
         if not rule:
             print(f"No rule found for src_ip={src_ip} and dst_ip={dst_ip}")
-            return
 
         # Check if the firewall IPs match the rule's firewall IPs
         if rule.srcFirewallIP != src_firewall_ip or rule.dstFirewallIP != dst_firewall_ip:
             print(f"Firewall IP mismatch for rule {rule.id}")
-            return
         # Extract interface for source IP from source firewall
         src_interface = extract_interface_for_ip(
             firewall_ip=src_firewall_ip,
@@ -94,6 +92,21 @@ def update_firewall_interfaces_for_rule(src_firewall_ip, dst_firewall_ip, src_ip
         if dst_interface is None:
             dst_interface = extract_default_interface(firewall_ip=dst_firewall_ip, username=username, password=password, secret=secret)
             print("*"*200,dst_interface) 
+        if src_firewall_ip is None or dst_firewall_ip is None:
+            if src_interface == dst_interface:
+                rule.src_interface = "No route found"
+                rule.dst_interface = "No route found"
+                status = packetInputTracer(
+                    rule=rule,
+                    src_firewall_ip=src_firewall_ip,
+                    dst_firewall_ip=dst_firewall_ip,
+                    username=username,
+                    password=password,
+                    db=db
+                )
+                db.flush()
+                db.commit()
+                return
         if src_interface or dst_interface:
             if src_interface == dst_interface:
                 rule.inLine = "not inline"
