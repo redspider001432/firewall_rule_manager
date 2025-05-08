@@ -138,45 +138,45 @@
     <!-- ITSR Details Section -->
     <div class="section-title" onclick="toggleSection(this)">ITSR Details <i class="fas fa-chevron-right"></i></div>
     <div class="form-group">
-      <!-- The ITSR Number field can still be used during Build Batch if needed -->
       <input type="text" id="itsr-number" placeholder="ITSR Number" />
       <input type="text" placeholder="Email">
     </div>
 
-    <!-- Other sections (Source Server, Destination Server, Ports & Protocol) remain unchanged -->
+    <!-- Source Server Section -->
     <div class="section-title" onclick="toggleSection(this)">Source Server <i class="fas fa-chevron-right"></i></div>
     <div class="form-group">
       <textarea placeholder="Source Server IP"></textarea>
       <select id="src-firewall" multiple>
         <option value="None">None</option>
-      {% for fw in firewalls %}
-          <option value="{{ fw.firewall_hostname }}">{{ fw.firewall_hostname }}</option>
-      {% endfor %}
+        {% for fw in firewalls %}
+            <option value="{{ fw.display_name }}">{{ fw.display_name }}</option>
+        {% endfor %}
       </select>
     </div>
 
+    <!-- Destination Server Section -->
     <div class="section-title" onclick="toggleSection(this)">Destination Server <i class="fas fa-chevron-right"></i></div>
     <div class="form-group">
       <textarea placeholder="Destination Server IP"></textarea>
       <select id="dst-firewall" multiple>
-          <option value="None">None</option>
-      {% for fw in firewalls %}
-          <option value="{{ fw.firewall_hostname }}">{{ fw.firewall_hostname }}</option>
-      {% endfor %}
+        <option value="None">None</option>
+        {% for fw in firewalls %}
+            <option value="{{ fw.display_name }}">{{ fw.display_name }}</option>
+        {% endfor %}
       </select>
     </div>
 
-    
-    <div class="section-title" onclick="toggleSection(this)">Intermidiate Server <i class="fas fa-chevron-right"></i></div>
+    <!-- Intermediate Server Section -->
+    <div class="section-title" onclick="toggleSection(this)">Intermediate Server <i class="fas fa-chevron-right"></i></div>
     <div class="form-group">
       <select id="inter-firewall" multiple>
-      {% for fw in firewalls %}
-          <option value="{{ fw.firewall_hostname }}">{{ fw.firewall_hostname }}</option>
-      {% endfor %}
+        {% for fw in firewalls %}
+            <option value="{{ fw.display_name }}">{{ fw.display_name }}</option>
+        {% endfor %}
       </select>
     </div>
 
-
+    <!-- Ports & Protocol Section -->
     <div class="section-title" onclick="toggleSection(this)">Ports & Protocol <i class="fas fa-chevron-right"></i></div>
     <div class="form-group">
       <input type="text" placeholder="Multiple Ports">
@@ -191,7 +191,6 @@
 
     <div class="buttons">
       <button class="build-batch">Build Batch</button>
-      <!-- Final execute button now functions without requiring ITSR input -->
       <button id="final-execute-btn">Final Execute</button>
       <button class="packet-tracer">Packet Tracer</button>
       <button class="packet-capture">Packet Capture</button>
@@ -226,16 +225,15 @@
           <td>{{ rule.dest_ip }}</td>
           <td>{{ rule.port_range_start }} - {{ rule.port_range_end }}</td>
           <td>{{ rule.protocol }}</td>
-          <td>{{ rule.srcFirewall }}</td> <!-- Correct Source Firewall -->
-          <td>{{ rule.dstFirewall }}</td> <!-- Correct Destination Firewall -->
-          <td>{{ rule.interFirewall | default('-') }}</td> <!-- Correct Intermediate Firewall -->
+          <td>{{ rule.srcFirewall }}</td>
+          <td>{{ rule.dstFirewall }}</td>
+          <td>{{ rule.interFirewall | default('-') }}</td>
           <td>{{ rule.pre_status }}</td>
           <td>{{ rule.final_status }}</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
-    
   </div>
   <script>
     function toggleSection(section) {
@@ -247,74 +245,62 @@
     }
 
     async function submitForm() {
-    // 1) Grab the ITSR number, email and date
-    const itsrNumber = document.getElementById('itsr-number').value;
-    const email      = document.querySelector('input[placeholder="Email"]').value;
-    //const requestDate = document.querySelector('input[type="date"]').value;
+      const itsrNumber = document.getElementById('itsr-number').value;
+      const email = document.querySelector('input[placeholder="Email"]').value;
+      const sourceIP = document.querySelector('textarea[placeholder="Source Server IP"]').value;
+      const destinationIP = document.querySelector('textarea[placeholder="Destination Server IP"]').value;
+      const proto = document.getElementById('protocol').value;
+      const multiplePorts = document.querySelector('input[placeholder="Multiple Ports"]').value;
+      const portRangeStart = document.querySelector('input[placeholder="Start Port"]').value;
+      const portRangeEnd = document.querySelector('input[placeholder="End Port"]').value;
+      const portsNumeric = parseInt(portRangeStart, 10) || 0;
+      const srcFirewall = document.getElementById('src-firewall').value;
+      const dstFirewall = document.getElementById('dst-firewall').value;
+      const interFirewall = document.getElementById('inter-firewall').value;
 
-    // 2) Grab Source / Destination IPs
-    const sourceIP      = document.querySelector('textarea[placeholder="Source Server IP"]').value;
-    const destinationIP = document.querySelector('textarea[placeholder="Destination Server IP"]').value;
-    // 3) Grab your three selects by their new IDs
-    const proto   = document.getElementById('protocol').value;
+      const formData = {
+        itsr_number: itsrNumber,
+        email: email,
+        source_ip: sourceIP,
+        dest_ip: destinationIP,
+        multiple_ports: multiplePorts,
+        port_range_start: portRangeStart,
+        port_range_end: portRangeEnd,
+        protocol: proto,
+        ports: portsNumeric,
+        srcFirewall: srcFirewall,
+        dstFirewall: dstFirewall,
+        interFirewall: interFirewall,
+        pre_status: "Added to queue",
+        post_status: "Pending",
+        final_status: "Pending"
+      };
 
-    // 4) Grab port info
-    const multiplePorts   = document.querySelector('input[placeholder="Multiple Ports"]').value;
-    const portRangeStart  = document.querySelector('input[placeholder="Start Port"]').value;
-    const portRangeEnd    = document.querySelector('input[placeholder="End Port"]').value;
-    const portsNumeric    = parseInt(portRangeStart, 10) || 0;
+      const response = await fetch('/submit-rule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams(formData).toString()
+      });
 
-    const srcFirewall = document.getElementById('src-firewall').value;
-    const dstFirewall = document.getElementById('dst-firewall').value;
-    const interFirewall = document.getElementById('inter-firewall').value;
-    // 5) Build the payload
-    const formData = {
-      itsr_number:       itsrNumber,
-      email:             email,
-      source_ip:         sourceIP,
-      dest_ip:           destinationIP,
-      multiple_ports:    multiplePorts,
-      port_range_start:  portRangeStart,
-      port_range_end:    portRangeEnd,
-      protocol:          proto,
-      ports:             portsNumeric,
-      // Adjust this or pull from a <select> if you want dynamic firewall selection
-      srcFirewall: srcFirewall,
-      dstFirewall : dstFirewall,
-      interFirewall : interFirewall,
-      pre_status:        "Added to queue",
-      post_status:       "Pending",
-      final_status:      "Pending"
-    };
-
-    // 6) Send to your FastAPI endpoint
-    const response = await fetch('/submit-rule', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body:    new URLSearchParams(formData).toString()
-    });
-
-    if (response.ok) {
-      alert('Rule submitted!');
-      window.location.reload();
-    } else {
-      const err = await response.json();
-      alert('Error: ' + err.detail);
+      if (response.ok) {
+        alert('Rule submitted!');
+        window.location.reload();
+      } else {
+        const err = await response.json();
+        alert('Error: ' + err.detail);
+      }
     }
-  }
 
     document.querySelector('.build-batch').addEventListener('click', submitForm);
 
-    // Final Execute submission handler: no ITSR number is required
     async function submitFinalExecute() {
-      // Send POST request without ITSR data
       const response = await fetch('/final_execute', {
         method: 'POST'
       });
       if (response.ok) {
         const result = await response.json();
         alert(result.message);
-        location.reload(); // Refresh page to show updated statuses
+        location.reload();
       } else {
         const err = await response.json();
         alert("Error: " + err.detail);
