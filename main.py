@@ -14,47 +14,70 @@ app.include_router(finalExecute.router)
 
 FirewallList.__table__.create(bind=engine, checkfirst=True)
 FirewallRule.__table__.create(bind=engine, checkfirst=True)
+
 # Dependency to get DB session
 def get_database():
     yield from get_db()
-
 
 # Route to render the HTML page with filtered rules
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request, db: Session = Depends(get_database)):
     rules = db.query(FirewallRule).filter(FirewallRule.final_status != "Completed").all()
     firewalls = db.query(FirewallList).all()
+    # Prepare firewall data with concatenated display names
+    firewall_data = [
+        {
+            "firewall_hostname": fw.firewall_hostname,
+            "context_name": fw.context_name,
+            "display_name": f"{fw.firewall_hostname}:{fw.context_name}" if fw.context_name else fw.firewall_hostname
+        }
+        for fw in firewalls
+    ]
     return templates.get_template("index.html").render(
         request=request,
         rules=rules,
-        firewalls=firewalls
+        firewalls=firewall_data
     )
 
 # Handle form submission
 @app.post("/submit-rule")
 async def submit_rule(request: Request, db: Session = Depends(get_database)):
     form_data = await request.form()
-    srcFirewall_hostname = form_data.get("srcFirewall")
-    dstFirewall_hostname = form_data.get("dstFirewall")
-    interFirewall_hostname = form_data.get("interFirewall")#change row
-    srcFirewall = db.query(FirewallList).filter(FirewallList.firewall_hostname == srcFirewall_hostname).first()
-    dstFirewall = db.query(FirewallList).filter(FirewallList.firewall_hostname == dstFirewall_hostname).first()
+    srcFirewall_display = form_data.get("srcFirewall")
+    dstFirewall_display = form_data.get("dstFirewall")
+    interFirewall_display = form_data.get("interFirewall")
+
+    # Helper function to extract firewall_hostname from display_name
+    def get_firewall_hostname(display_name):
+        if not display_name or display_name == "None":
+            return None
+        return display_name.split(":")[0]
+
+    # Extract firewall_hostname from display names
+    srcFirewall_hostname = get_firewall_hostname(srcFirewall_display)
+    dstFirewall_hostname = get_firewall_hostname(dstFirewall_display)
+    interFirewall_hostname = get_firewall_hostname(interFirewall_display)
+
+    # Query FirewallList using firewall_hostname
+    srcFirewall = db.query(FirewallList).filter(FirewallList.firewall_hostname == srcFirewall_hostname).first() if srcFirewall_hostname else None
+    dstFirewall = db.query(FirewallList).filter(FirewallList.firewall_hostname == dstFirewall_hostname).first() if dstFirewall_hostname else None
+    
     if not srcFirewall and not dstFirewall:
         raise HTTPException(status_code=404, detail="Either source firewall or destination firewall is wrong")
+    
     srcFirewallIP = srcFirewall.ip if srcFirewall else None
     dstFirewallIP = dstFirewall.ip if dstFirewall else None
 
     if srcFirewallIP:
         if not failOver(srcFirewallIP, username="amishra11", password="Dru56%Pty6", secret="Dru56%Pty6"):
             raise HTTPException(status_code=500, detail=f"{srcFirewall_hostname} is not in ACTIVE state")
-    print(srcFirewallIP)
+    
     if dstFirewallIP:
         if not failOver(dstFirewallIP, username="amishra11", password="Dru56%Pty6", secret="Dru56%Pty6"):
             raise HTTPException(status_code=500, detail=f"{dstFirewall_hostname} is not in ACTIVE state")
- # Extract IPs properly by splitting on any whitespace
-    from itertools import product
 
-# Extract and clean source and destination IPs
+    # Extract IPs properly by splitting on any whitespace
+    from itertools import product
     source_ips = [ip.strip() for ip in form_data.get("source_ip", "").split() if ip.strip()]
     dest_ips = [ip.strip() for ip in form_data.get("dest_ip", "").split() if ip.strip()]
 
@@ -91,6 +114,7 @@ async def submit_rule(request: Request, db: Session = Depends(get_database)):
 
         db.add(new_rule)
         created_rule.append(new_rule)
+    
     db.flush()
     
     for rule in created_rule:
@@ -104,8 +128,6 @@ async def submit_rule(request: Request, db: Session = Depends(get_database)):
             secret="Dru56%Pty6",
             db=db
         )
+    
     db.commit()
     return {"message": "Source-Destination rules submitted successfully!"}
-
-
-    
