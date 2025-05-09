@@ -24,12 +24,11 @@ def get_database():
 async def read_root(request: Request, db: Session = Depends(get_database)):
     rules = db.query(FirewallRule).filter(FirewallRule.final_status != "Completed").all()
     firewalls = db.query(FirewallList).all()
-    # Prepare firewall data with concatenated display names
+    # Prepare firewall data with context names
     firewall_data = [
         {
             "firewall_hostname": fw.firewall_hostname,
-            "context_name": fw.context_name,
-            "display_name": f"{fw.firewall_hostname}:{fw.context_name}" if fw.context_name else fw.firewall_hostname
+            "context_names": [fw.context_name] if fw.context_name else []
         }
         for fw in firewalls
     ]
@@ -47,16 +46,19 @@ async def submit_rule(request: Request, db: Session = Depends(get_database)):
     dstFirewall_display = form_data.get("dstFirewall")
     interFirewall_display = form_data.get("interFirewall")
 
-    # Helper function to extract firewall_hostname from display_name
-    def get_firewall_hostname(display_name):
-        if not display_name or display_name == "None":
-            return None
-        return display_name.split(":")[0]
+    # Helper function to extract firewall_hostname and context_name
+    def parse_firewall_value(display_value):
+        if not display_value or display_value == "None":
+            return None, None
+        parts = display_value.split(":")
+        hostname = parts[0]
+        context = parts[1] if len(parts) > 1 else None
+        return hostname, context
 
-    # Extract firewall_hostname from display names
-    srcFirewall_hostname = get_firewall_hostname(srcFirewall_display)
-    dstFirewall_hostname = get_firewall_hostname(dstFirewall_display)
-    interFirewall_hostname = get_firewall_hostname(interFirewall_display)
+    # Extract firewall_hostname and context_name
+    srcFirewall_hostname, srcContext = parse_firewall_value(srcFirewall_display)
+    dstFirewall_hostname, dstContext = parse_firewall_value(dstFirewall_display)
+    interFirewall_hostname, interContext = parse_firewall_value(interFirewall_display)
 
     # Query FirewallList using firewall_hostname
     srcFirewall = db.query(FirewallList).filter(FirewallList.firewall_hostname == srcFirewall_hostname).first() if srcFirewall_hostname else None
@@ -76,12 +78,10 @@ async def submit_rule(request: Request, db: Session = Depends(get_database)):
         if not failOver(dstFirewallIP, username="amishra11", password="Dru56%Pty6", secret="Dru56%Pty6"):
             raise HTTPException(status_code=500, detail=f"{dstFirewall_hostname} is not in ACTIVE state")
 
-    # Extract IPs properly by splitting on any whitespace
     from itertools import product
     source_ips = [ip.strip() for ip in form_data.get("source_ip", "").split() if ip.strip()]
     dest_ips = [ip.strip() for ip in form_data.get("dest_ip", "").split() if ip.strip()]
 
-    # Generate all permutations of source and destination IPs
     src_ip_list = source_ips or [None]
     dst_ip_list = dest_ips or [None]
     created_rule = []
