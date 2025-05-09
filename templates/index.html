@@ -146,11 +146,14 @@
     <div class="section-title" onclick="toggleSection(this)">Source Server <i class="fas fa-chevron-right"></i></div>
     <div class="form-group">
       <textarea placeholder="Source Server IP"></textarea>
-      <select id="src-firewall" multiple>
-        <option value="None">None</option>
+      <select id="src-firewall">
+        <option value="None">Select Firewall</option>
         {% for fw in firewalls %}
-            <option value="{{ fw.display_name }}">{{ fw.display_name }}</option>
+          <option value="{{ fw.firewall_hostname }}">{{ fw.firewall_hostname }}</option>
         {% endfor %}
+      </select>
+      <select id="src-context">
+        <option value="">Select Context</option>
       </select>
     </div>
 
@@ -158,21 +161,28 @@
     <div class="section-title" onclick="toggleSection(this)">Destination Server <i class="fas fa-chevron-right"></i></div>
     <div class="form-group">
       <textarea placeholder="Destination Server IP"></textarea>
-      <select id="dst-firewall" multiple>
-        <option value="None">None</option>
+      <select id="dst-firewall">
+        <option value="None">Select Firewall</option>
         {% for fw in firewalls %}
-            <option value="{{ fw.display_name }}">{{ fw.display_name }}</option>
+          <option value="{{ fw.firewall_hostname }}">{{ fw.firewall_hostname }}</option>
         {% endfor %}
+      </select>
+      <select id="dst-context">
+        <option value="">Select Context</option>
       </select>
     </div>
 
     <!-- Intermediate Server Section -->
     <div class="section-title" onclick="toggleSection(this)">Intermediate Server <i class="fas fa-chevron-right"></i></div>
     <div class="form-group">
-      <select id="inter-firewall" multiple>
+      <select id="inter-firewall">
+        <option value="None">Select Firewall</option>
         {% for fw in firewalls %}
-            <option value="{{ fw.display_name }}">{{ fw.display_name }}</option>
+          <option value="{{ fw.firewall_hostname }}">{{ fw.firewall_hostname }}</option>
         {% endfor %}
+      </select>
+      <select id="inter-context">
+        <option value="">Select Context</option>
       </select>
     </div>
 
@@ -236,6 +246,16 @@
     </table>
   </div>
   <script>
+    // Safely parse firewall-context mapping from backend
+    let firewallContexts;
+    try {
+      firewallContexts = JSON.parse('{{ firewalls | tojson | safe }}');
+      console.log("Firewall Contexts:", firewallContexts); // Debug log
+    } catch (e) {
+      console.error("Error parsing firewallContexts:", e);
+      firewallContexts = [];
+    }
+
     function toggleSection(section) {
       const formGroup = section.nextElementSibling;
       const icon = section.querySelector("i");
@@ -243,6 +263,38 @@
       formGroup.style.display = isVisible ? 'none' : 'flex';
       icon.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(90deg)';
     }
+
+    // Function to populate context dropdown based on firewall selection
+    function populateContextDropdown(firewallSelectId, contextSelectId) {
+      const firewallSelect = document.getElementById(firewallSelectId);
+      const contextSelect = document.getElementById(contextSelectId);
+
+      firewallSelect.addEventListener('change', () => {
+        const selectedFirewall = firewallSelect.value;
+        contextSelect.innerHTML = '<option value="">Select Context</option>';
+
+        if (selectedFirewall !== 'None') {
+          const firewall = firewallContexts.find(fw => fw.firewall_hostname === selectedFirewall);
+          if (firewall && Array.isArray(firewall.context_names)) {
+            firewall.context_names.forEach(context => {
+              if (context) { // Only add non-empty contexts
+                const option = document.createElement('option');
+                option.value = context;
+                option.text = context;
+                contextSelect.appendChild(option);
+              }
+            });
+          } else {
+            console.warn(`No valid context_names found for firewall: ${selectedFirewall}`);
+          }
+        }
+      });
+    }
+
+    // Initialize context dropdowns
+    populateContextDropdown('src-firewall', 'src-context');
+    populateContextDropdown('dst-firewall', 'dst-context');
+    populateContextDropdown('inter-firewall', 'inter-context');
 
     async function submitForm() {
       const itsrNumber = document.getElementById('itsr-number').value;
@@ -254,9 +306,19 @@
       const portRangeStart = document.querySelector('input[placeholder="Start Port"]').value;
       const portRangeEnd = document.querySelector('input[placeholder="End Port"]').value;
       const portsNumeric = parseInt(portRangeStart, 10) || 0;
+
+      // Get firewall and context values
       const srcFirewall = document.getElementById('src-firewall').value;
+      const srcContext = document.getElementById('src-context').value;
       const dstFirewall = document.getElementById('dst-firewall').value;
+      const dstContext = document.getElementById('dst-context').value;
       const interFirewall = document.getElementById('inter-firewall').value;
+      const interContext = document.getElementById('inter-context').value;
+
+      // Create concatenated values
+      const srcFirewallValue = srcFirewall !== 'None' && srcContext ? `${srcFirewall}:${srcContext}` : srcFirewall;
+      const dstFirewallValue = dstFirewall !== 'None' && dstContext ? `${dstFirewall}:${dstContext}` : dstFirewall;
+      const interFirewallValue = interFirewall !== 'None' && interContext ? `${interFirewall}:${interContext}` : interFirewall;
 
       const formData = {
         itsr_number: itsrNumber,
@@ -268,9 +330,9 @@
         port_range_end: portRangeEnd,
         protocol: proto,
         ports: portsNumeric,
-        srcFirewall: srcFirewall,
-        dstFirewall: dstFirewall,
-        interFirewall: interFirewall,
+        srcFirewall: srcFirewallValue,
+        dstFirewall: dstFirewallValue,
+        interFirewall: interFirewallValue,
         pre_status: "Added to queue",
         post_status: "Pending",
         final_status: "Pending"
